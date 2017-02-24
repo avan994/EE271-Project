@@ -1,8 +1,8 @@
 
+
 #include "rastBBox_fix.h"
 #include "assert.h"
 #include "limits.h"
-
 
 
 
@@ -157,23 +157,61 @@ void rastBBox_bbox_fix( u_Poly< long , ushort >& poly ,
   ll_y = 0 ;
 
   /////
-  ///// Bounding Box Function Goes Here
+  ///// Bounding Box Function Is Here
   ///// 
+  valid = false; /* Invalid by default */
   
-  ///// PLACE YOUR CODE HERE
-
-
+  /* Invalid if not a triangle or quad */
+  if (poly.vertices < 3 || poly.vertices > 4) return;
   
+  int i = 0;
+  long X = poly.v[i].x[0];
+  long Y = poly.v[i].x[1];
+  ur_x = X;
+  ll_x = X;
+  ur_y = Y;
+  ll_y = Y;
+  for (i = 1; i < poly.vertices; i++) {
+    X = poly.v[i].x[0];
+    Y = poly.v[i].x[1];
+    
+    if (X > ur_x) ur_x = X;
+    if (X < ll_x) ll_x = X;
+    if (Y > ur_y) ur_y = Y;
+    if (Y < ll_y) ll_y = Y;
+  }
   
+  /* Invalid if entire polygon offscreen */
+  if (ur_x < 0 || ur_y < 0 
+  || ll_x > screen_w || ll_y > screen_h) {
+    /* cout << "Invalidated.\n"; */
+    return;
+  }
   
+  /* Clip if polygon partially offscreen */
+  if (ur_x > screen_w) ur_x = screen_w;
+  if (ur_y > screen_h) ur_y = screen_h;
+  if (ll_x < 0) ll_x = 0;
+  if (ll_x < 0) ll_y = 0;
   
+  /* Round values down to nearest sample */
+  long sh = r_shift - ss_w_lg2;
+  ur_x = (ur_x >> sh) << sh;
+  ur_y = (ur_y >> sh) << sh;
+  ll_x = (ll_x >> sh) << sh;
+  ll_y = (ll_y >> sh) << sh;
   
-
+  valid = true; /* Now valid */
+  
+  /* For debugging, if necessary */
+  /*cout << "Result: \n";
+  cout << ur_x << "\n" << ur_y << "\n";
+  cout << ll_x << "\n" << ll_y << "\n";
+  cout << "Validated.\n";*/
+  
   /////
-  ///// Bounding Box Function Goes Here
+  ///// Bounding Box Function Is Here
   ///// 
-
-
 }
 
 
@@ -215,7 +253,32 @@ int rastBBox_stest_fix( u_Poly< long , ushort >& poly,
 
   ///// PLACE YOUR CODE HERE
   
-  
+  long v0x,v0y,v1x,v1y,v2x,v2y,dist0,dist1,dist2;
+  int b0,b1,b2;
+  //Shift Vertices such that sample is origin
+  v0x = poly.v[0].x[0] - s_x;
+  v0y = poly.v[0].x[1] - s_y;
+  v1x = poly.v[1].x[0] - s_x;
+  v1y = poly.v[1].x[1] - s_y;
+  v2x = poly.v[2].x[0] - s_x;
+  v2y = poly.v[2].x[1] - s_y;
+
+
+
+ 
+  //Distance of origin shifted edge 
+  dist0 = v0x * v1y - v1x * v0y ; // 0−1 edge
+  dist1 = v1x * v2y - v2x * v1y ; // 1−2 edge
+  dist2 = v2x * v0y - v0x * v2y ; // 2−0 edge
+
+ 
+  //Test if Origin is on Right Side of Shifted Edge
+  b0 = (dist0 <= 0.0);
+  b1 = (dist1 < 0.0);
+  b2 = (dist2 <= 0.0);
+
+  //Triangle Min Terms with backface culling
+  result = b0 && b1 && b2 ;
   
   
   
@@ -276,21 +339,22 @@ void rastBBox_jhash_jit_fix(
 			      const long& ss_w_lg2,
 			      long* jitter_x,
 			      long* jitter_y)
+
 {
 
   long  x = s_x >> 4 ;
-  long  y = s_y >> 4 ; 
+  long  y = s_y >> 4 ;
   uchar arr40_1[5] ;
   uchar arr40_2[5] ;
 
   long* arr40_1_ptr = (long*)arr40_1;
   long* arr40_2_ptr = (long*)arr40_2;
 
-  ushort val_x[1] ; 
-  ushort val_y[1] ; 
+  ushort val_x[1] ;
+  ushort val_y[1] ;
 
-  *arr40_1_ptr = ( y << 20 ) | x ; 
-  *arr40_2_ptr = ( x << 20 ) | y ; 
+  *arr40_1_ptr = ( y << 20 ) | x ;
+  *arr40_2_ptr = ( x << 20 ) | y ;
 
   rastBBox_40t8_hash( arr40_1 , val_x , ss_w_lg2 );
   rastBBox_40t8_hash( arr40_2 , val_y , ss_w_lg2 );
@@ -299,5 +363,4 @@ void rastBBox_jhash_jit_fix(
   *jitter_y = (long)( val_y[0] );
 
 }
-
 
