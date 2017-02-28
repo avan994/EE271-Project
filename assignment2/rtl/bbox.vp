@@ -21,7 +21,9 @@
  *   3 x,y vertices corresponding to tri
  * 
  * Global Signals: 
- *   clk, rst
+ *   clk, rsts[0][1] = ~b_x[0] && b_x[2];
+      UR_box_cases[0][2] = ~b_x[1] && ~b_x[2]; 
+      
  * 
  * Function:
  *   Determine a bounding box for the polygon
@@ -185,6 +187,25 @@ module `mname()`
    logic 				outvalid_R10H;               // output is valid
    
    //////// DECLARE OTHER SIGNALS YOU NEED
+   
+   //For readability
+   //; my $X = 0;
+   //; my $Y = 1;
+   //; my $LL = 0;
+   //; my $UR = 1;
+   //; 
+   
+   // *** Comparison storage in step 1
+   /*logic unsigned [2:0] b_x;
+   logic unsigned [2:0] b_y;
+   logic unsigned [`$verts`-1:0] LL_box_cases [1:0];
+   logic unsigned [`$verts`-1:0] UR_box_cases [1:0];*/
+   
+   logic unsigned [2:0] b [1:0];
+   logic unsigned [`$verts`-1:0] box_cases [1:0][1:0];
+   
+   // *** Sampling mask for rounding in step 2
+   logic unsigned [`radix`-1:0] MSAA_mask;
 
    //R10 Signals
    
@@ -216,10 +237,63 @@ module `mname()`
    //; if( $verts == 3 ) {
 
    always_comb begin
+     /*REdundant code kept in case debugging is necessary */
+      /*b_x[0] = (poly_R10S[0][0] > poly_R10S[1][0]);
+      b_x[1] = (poly_R10S[0][0] > poly_R10S[2][0]);
+      b_x[2] = (poly_R10S[1][0] > poly_R10S[2][0]);*/
+      
+      /* b_y[0] = (poly_R10S[0][1] > poly_R10S[1][1]);
+      b_y[1] = (poly_R10S[0][1] > poly_R10S[2][1]);
+      b_y[2] = (poly_R10S[1][1] > poly_R10S[2][1]);*/
+      
+      /* UR_box_cases[0][0] = b_x[0] && b_x[1];
+      UR_box_cases[0][1] = ~b_x[0] && b_x[2];
+      UR_box_cases[0][2] = ~b_x[1] && ~b_x[2]; 
+      
+      UR_box_cases[1][0] = b_y[0] && b_y[1];
+      UR_box_cases[1][1] = ~b_y[0] && b_y[2];
+      UR_box_cases[1][2] = ~b_y[1] && ~b_y[2]; 
+      
+      LL_box_cases[0][0] = ~b_x[0] && ~b_x[1];
+      LL_box_cases[0][1] = b_x[0] && ~b_x[2];
+      LL_box_cases[0][2] = b_x[1] && b_x[2];
+      
+      LL_box_cases[1][0] = ~b_y[0] && ~b_y[1];
+      LL_box_cases[1][1] = b_y[0] && ~b_y[2];
+      LL_box_cases[1][2] = b_y[1] && b_y[2];*/
+      
+      //; for (my $j = 0; $j < 2 ; $j++) {
+      b[`$j`][0] = (poly_R10S[0][`$j`] > poly_R10S[1][`$j`]);
+      b[`$j`][1] = (poly_R10S[0][`$j`] > poly_R10S[2][`$j`]);
+      b[`$j`][2] = (poly_R10S[1][`$j`] > poly_R10S[2][`$j`]);
+      /*b[`$j`][3] = (poly_R10S[0][`$j`] > poly_R10S[3][`$j`]);
+      b[`$j`][4] = (poly_R10S[1][`$j`] > poly_R10S[3][`$j`]);
+      b[`$j`][5] = (poly_R10S[2][`$j`] > poly_R10S[3][`$j`]);*/
+      //; }
+    
+      //; for (my $j = 0; $j < 2 ; $j++) {
+      box_cases[`$UR`][`$j`][0] = b[`$j`][0] && b[`$j`][1];
+      box_cases[`$UR`][`$j`][1] = ~b[`$j`][0] && b[`$j`][2];
+      box_cases[`$UR`][`$j`][2] = ~b[`$j`][1] && ~b[`$j`][2];
+      
+      box_cases[`$LL`][`$j`][0] = ~b[`$j`][0] && ~b[`$j`][1];
+      box_cases[`$LL`][`$j`][1] = b[`$j`][0] && ~b[`$j`][2];
+      box_cases[`$LL`][`$j`][2] = b[`$j`][1] && b[`$j`][2];
+      //; }
 
-   //////// PLACE YOUR CODE HERE
-   //////// ASSIGN VALUES TO "box_R10S"
-
+      //; for( my $k = 0; $k < 2 ; $k++ ) { 
+      //;  for( my $i = 0 ; $i < 2 ; $i++ ) {
+      //;   for( my $j = 0 ; $j < 2 ; $j++ ) {
+      //UR X
+      unique case(box_cases[`$k`][`$j`])
+        'b001: box_R10S[`$k`][`$j`] = poly_R10S[0][`$j`];
+        'b010: box_R10S[`$k`][`$j`] = poly_R10S[1][`$j`]; 
+        'b100: box_R10S[`$k`][`$j`] = poly_R10S[2][`$j`];
+      endcase
+      
+      //;   }
+      //;  }
+      //; }
    end
 
    //; }  
@@ -245,7 +319,6 @@ module `mname()`
    //       to a mask would allow you to do this operation
    //       as a bitwise and operation.
 
-   
    //Round LowerLeft and UpperRight for X and Y
    //; for( my $i = 0 ; $i < 2 ; $i++ ) {
    //; 	for( my $j = 0 ; $j < 2 ; $j++ ) {
@@ -253,10 +326,13 @@ module `mname()`
       
       //Integer Portion of LL and UR Remains the Same 
       rounded_box_R10S[`$i`][`$j`][`$sig_fig`-1:`$radix`] 
-     = box_R10S[`$i`][`$j`][`$sig_fig`-1:`$radix`];
+        = box_R10S[`$i`][`$j`][`$sig_fig`-1:`$radix`];
 
-      //////// PLACE YOUR CODE HERE
-      //////// ASSIGN FRACTION PORTION
+      // *** Assign fraction portion by AND'ing with Mask:
+      MSAA_mask = ~('b0) << (`radix` - subSample_RnnnnU);
+      
+      rounded_box_R10S[`$i`][`$j`][`$radix`-1:0] 
+        = box_R10S[`$i`][`$j`][`$radix`-1:0] & MSAA_mask;
 
       
    end // always_comb
@@ -277,9 +353,33 @@ module `mname()`
 
    always_comb begin
 
-      //////// PLACE YOUR CODE HERE
       //////// ASSIGN "out_box_R10S" and "outvalid_R10H"
+      
+      //LL X
+      out_box_R10S[0][0] = (rounded_box_R10S[0][0] > 'b0) 
+        ? rounded_box_R10S[0][0] 
+        : 'b0;
 
+      //LL Y
+      out_box_R10S[0][1] = (rounded_box_R10S[0][1] > 'b0) 
+        ? rounded_box_R10S[0][1] 
+        : screen_RnnnnS[0]; 
+        
+      //UR X
+      out_box_R10S[1][0] = (rounded_box_R10S[0][1] < screen_RnnnnS[0]) 
+        ? rounded_box_R10S[0][1] 
+        : 'b0; 
+      
+      //UR Y
+      out_box_R10S[1][1] = (rounded_box_R10S[0][1] < screen_RnnnnS[1]) 
+        ? rounded_box_R10S[0][1] 
+        : screen_RnnnnS[1]; 
+        
+      outvalid_R10H = validPoly_R10H 
+        && ((rounded_box_R10S[0][0] > screen_RnnnnS[0]) 
+        && (rounded_box_R10S[0][1] > screen_RnnnnS[1])) 
+        && ((rounded_box_R10S[0][1] < 'b0)
+        && (rounded_box_R10S[0][1] < 'b0));
    end
 
    // ***************** End of Step 3 *********************
