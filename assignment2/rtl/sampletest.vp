@@ -120,7 +120,9 @@ module  `mname()`
    // Signals in Access Order 
 
    //////// DECLARE OTHER INTERMEDIATE SIGNALS YOU NEED
-
+   logic 				 b0 ; //Signal to determine if dist0 is to the right or left of the edge
+   logic 				 b1 ; //Signal to determine if dist1 is to the right or left of the edge
+   logic 				 b2 ; //Signal to determine if dist2 is to the right or left of the edge
 
    //; if( $verts == 3 ) {
 
@@ -131,11 +133,20 @@ module  `mname()`
    // Consider the following steps:
 
    //// (1) Shift X, Y coordinates such that the fragment resides on the (0,0) position.
+      //poly_shift_R16S[`$verts`-1:0][1:0] = poly_R16S[`$verts`-1:0][`$axis`-1:0] - sample_R16S[1:0];
+   
 
    //; for( my $i = 0 ; $i < $verts ; $i++ ) {
    //;  for( my $j = 0 ; $j < 2 ; $j++ ) {
    always_comb begin
-      poly_shift_R16S[`$i`][`$j`] = 
+      //Confused what to do with this line
+      //poly_shift_R16S[`$i`][`$j`] = 
+      poly_shift_R16S[0][1] <= poly_R16S[0][1] - sample_R16S[1];//vertex0 y
+      poly_shift_R16S[0][0] <= poly_R16S[0][0] - sample_R16S[0];//vertex0 x
+      poly_shift_R16S[1][1] <= poly_R16S[1][1] - sample_R16S[1];//vertex1 y
+      poly_shift_R16S[1][0] <= poly_R16S[1][0] - sample_R16S[0];//vertex1 x
+      poly_shift_R16S[2][1] <= poly_R16S[2][1] - sample_R16S[1];//vertex2 y
+      poly_shift_R16S[2][0] <= poly_R16S[2][0] - sample_R16S[0];//vertex2 x
    end
    //;  }
    //; }
@@ -144,18 +155,31 @@ module  `mname()`
 
    always_comb begin
      // assign edge_R16S
+     //edge_R16S[`$edges`-1:0][1:0][1:0] I added this
+     //Not sure what the point of this is??
+
    end
 
    //// (3) Calculate distance x_1 * y_2 - x_2 * y_1
 
    always_comb begin
      // assign dist_lg_R16S
+     //dist_lg_R16S[`$edges`-1:0]
+     dist_lg_R16S[0] <= poly_shift_R16S[0][0] * poly_shift_R16S[1][1] - poly_shift_R16S[1][0] * poly_shift_R16S[0][1];//edge 0-1
+     dist_lg_R16S[1] <= poly_shift_R16S[1][0] * poly_shift_R16S[2][1] - poly_shift_R16S[2][0] * poly_shift_R16S[1][1];//edge 1-2
+     dist_lg_R16S[2] <= poly_shift_R16S[2][0] * poly_shift_R16S[0][1] - poly_shift_R16S[0][0] * poly_shift_R16S[2][1];//edge 2-0
    end   
 
    //// (4) Check distance and assign hit_valid_R16H.
 
    always_comb begin
      // assign hit_valid_R16H
+     b0 = (dist_lg_R16S[0]<=0) ? 1 : 0;//check to see if point is to the right of the edge
+     b1 = (dist_lg_R16S[1]<0) ? 1 : 0;//check to see if point is to the right of the edge
+     b2 = (dist_lg_R16S[2]<=0) ? 1 : 0;//check to see if point is to the right of the edge
+
+     hit_valid_R16H = b0 && b1 && b2;//assign the hit valid signal to say if the sample point is inside the triangle 
+
    end   
 
    //////// END YOUR IMPLEMENTATION
