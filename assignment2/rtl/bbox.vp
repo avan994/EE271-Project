@@ -205,7 +205,7 @@ module `mname()`
    logic unsigned [`$verts`-1:0] box_cases [1:0][1:0];
    
    // *** Sampling mask for rounding in step 2
-   logic unsigned [`radix`-1:0] MSAA_mask;
+   logic unsigned [`$radix`-1:0] MSAA_mask;
 
    //R10 Signals
    
@@ -327,7 +327,7 @@ module `mname()`
         = box_R10S[`$i`][`$j`][`$sig_fig`-1:`$radix`];
 
       // *** Assign fraction portion by AND'ing with Mask:
-      MSAA_mask = ~('b0) << (`radix` - subSample_RnnnnU);
+      MSAA_mask = ~('b0) << (`$radix` - subSample_RnnnnU);
       
       rounded_box_R10S[`$i`][`$j`][`$radix`-1:0] 
         = box_R10S[`$i`][`$j`][`$radix`-1:0] & MSAA_mask;
