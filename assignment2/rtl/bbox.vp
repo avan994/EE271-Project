@@ -282,7 +282,6 @@ module `mname()`
       //; }
 
       //; for( my $k = 0; $k < 2 ; $k++ ) { 
-      //;  for( my $i = 0 ; $i < 2 ; $i++ ) {
       //;   for( my $j = 0 ; $j < 2 ; $j++ ) {
       //UR X
       unique case(box_cases[`$k`][`$j`])
@@ -292,7 +291,6 @@ module `mname()`
       endcase
       
       //;   }
-      //;  }
       //; }
    end
 
@@ -383,6 +381,11 @@ module `mname()`
    end
 
    // ***************** End of Step 3 *********************
+
+   // **************** NEW STAGE: STORAGE STAGE 
+   /* If circuit is currently halted:
+   move computed data into storage,  */
+   
 
 
    
