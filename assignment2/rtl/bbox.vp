@@ -365,7 +365,7 @@ module `mname()`
         
       //UR X
       out_box_R10S[`$UR`][`$X`] = (rounded_box_R10S[`$UR`][`$X`] < screen_RnnnnS[`$X`]) 
-        ? rounded_box_R10S[`$UR`]][`$X`] 
+        ? rounded_box_R10S[`$UR`][`$X`] 
         : screen_RnnnnS[`$X`]; 
       
       //UR Y
