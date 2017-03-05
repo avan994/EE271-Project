@@ -217,7 +217,7 @@ module `mname()`
    typedef enum logic {
 			 WAIT_STATE, TEST_STATE
 		       } state_t;  
-   state_t                        state_R14H;     //State Designation (Waiting or Testing)
+   state_t                        state_R14H;     //State Designation (Waiting or Testing or End)
    state_t                        next_state_R14H;        //Next Cycles State 
    
    // instantiate registers for storing these two states
@@ -259,8 +259,15 @@ module `mname()`
    // understanding the signals here
    
    ////// PLACE YOUR CODE HERE
-
  
+   next_up_samp_R14S[1] = (state_R14H = TEST_STATE) ? sample_R14S[1]+1 : sample_R14S[1];//next up y is one row above current y
+   next_up_samp_R14S[0] = (state_R14H = TEST_STATE) ? box_R14S[0][0] : sample_R14S[1];//next up x always starts at left edge
+   next_rt_samp_R14S[0] = (state_R14H = TEST_STATE) ? sample_R14S[0]+1 : sample_R14S[0];//next right x is 
+   next_rt_samp_R14S[1] = sample_R14S[1];//next right sample is on the same row
+   at_right_edg_R14H = (sample_R14S[0] = box_R14S[1][0]);
+   at_top_edg_R14H = (sample_R14S[0] = box_R14S[1][1]);
+   at_end_box_R14H = at_right_edg_R14H & at_top_edg_R14H;//if sample is right and top it is end of the box
+   
 
 
 
@@ -278,24 +285,24 @@ module `mname()`
    always_comb begin
       unique case( state_R14H )
         ( WAIT_STATE ): begin
-	   next_sample_R14S    =  
-	   next_validSamp_R14H =
-	   next_isQuad_R14H    =
-	   next_state_R14H     =
-	   next_poly_R14S      =
-	   next_color_R14U     = 
-	   next_box_R14S       =
-	   next_halt_RnnnnL    = 
+	   next_sample_R14S    = (at_right_edg_R14H == 1) ? next_up_samp_R14S : next_rt_samp_R14S; 
+	   next_validSamp_R14H = (at_right_edg_R14H == 1) ? next_up_samp_R14S : next_rt_samp_R14S;
+	   next_isQuad_R14H    = isQuad_R13H;
+	   next_state_R14H     = (validPoly_R13H) ? TEST_STATE : WAIT_STATE;
+	   next_poly_R14S      = poly_R13S;
+	   next_color_R14U     = color_R13U;
+	   next_box_R14S       = box_R13S;
+	   next_halt_RnnnnL    = (next_state_R14H == TEST_STATE) ? 1 : 0;
 	end
 	( TEST_STATE ): begin
-	   next_sample_R14S    = 
-	   next_validSamp_R14H = 
-	   next_isQuad_R14H    = 
-	   next_state_R14H     =  
-	   next_poly_R14S      =  
-	   next_color_R14U     =  
-	   next_box_R14S       =  
-	   next_halt_RnnnnL    =   
+	   next_sample_R14S    = (at_right_edg_R14H == 1) ? next_up_samp_R14S : next_rt_samp_R14S;
+	   next_validSamp_R14H = (at_right_edg_R14H == 1) ? next_up_samp_R14S : next_rt_samp_R14S;
+	   next_isQuad_R14H    = isQuad_R13H;
+	   next_state_R14H     = (at_end_box_R14H) ? WAIT_STATE : TEST_STATE; 
+	   next_poly_R14S      = poly_R13S; 
+	   next_color_R14U     = color_R13U; 
+	   next_box_R14S       = box_R13S; 
+	   next_halt_RnnnnL    = (next_state_R14H == WAIT_STATE) ? 0 : 1;  
 	end      
       endcase // case ( state_R14H )
       
