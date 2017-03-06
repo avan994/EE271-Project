@@ -317,6 +317,11 @@ module `mname()`
    //       to a mask would allow you to do this operation
    //       as a bitwise and operation.
 
+   // *** Assign fraction portion by AND'ing with Mask:
+   always_comb begin
+      MSAA_mask = ~(`$radix`'b0) << (`$radix` - subSample_RnnnnU);
+   end
+
    //Round LowerLeft and UpperRight for X and Y
    //; for( my $i = 0 ; $i < 2 ; $i++ ) {
    //; 	for( my $j = 0 ; $j < 2 ; $j++ ) {
@@ -326,8 +331,8 @@ module `mname()`
       rounded_box_R10S[`$i`][`$j`][`$sig_fig`-1:`$radix`] 
         = box_R10S[`$i`][`$j`][`$sig_fig`-1:`$radix`];
 
-      // *** Assign fraction portion by AND'ing with Mask:
-      MSAA_mask = ~('b0) << (`$radix` - subSample_RnnnnU);
+      
+      
       
       rounded_box_R10S[`$i`][`$j`][`$radix`-1:0] 
         = box_R10S[`$i`][`$j`][`$radix`-1:0] & MSAA_mask;
