@@ -292,7 +292,7 @@ module `mname()`
 	   next_poly_R14S      = poly_R13S;
 	   next_color_R14U     = color_R13U;
 	   next_box_R14S       = box_R13S;
-	   next_halt_RnnnnL    = (next_state_R14H == TEST_STATE);
+	   next_halt_RnnnnL    = ~(next_state_R14H == TEST_STATE);
 	end
 	( TEST_STATE ): begin
 	   next_sample_R14S    = (at_right_edg_R14H) ? next_up_samp_R14S : next_rt_samp_R14S;
@@ -302,7 +302,7 @@ module `mname()`
 	   next_poly_R14S      = poly_R13S; 
 	   next_color_R14U     = color_R13U; 
 	   next_box_R14S       = box_R13S; 
-	   next_halt_RnnnnL    = (next_state_R14H == TEST_STATE);  
+	   next_halt_RnnnnL    = ~(next_state_R14H == TEST_STATE);  
 	end      
       endcase // case ( state_R14H )
       
