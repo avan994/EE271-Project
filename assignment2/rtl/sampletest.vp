@@ -142,7 +142,7 @@ module  `mname()`
       //Confused what to do with this line
       //poly_shift_R16S[`$i`][`$j`] = 
 
-      poly_shift_R16S[`$i`][`$j`] = poly_R16S['$i']['$j'] - sample_R16S['$j'];
+      poly_shift_R16S[`$i`][`$j`] = poly_R16S[`$i`][`$j`] - sample_R16S[`$j`];
       /*poly_shift_R16S[0][1] <= poly_R16S[0][1] - sample_R16S[1];//vertex0 y
       poly_shift_R16S[0][0] <= poly_R16S[0][0] - sample_R16S[0];//vertex0 x
       poly_shift_R16S[1][1] <= poly_R16S[1][1] - sample_R16S[1];//vertex1 y
