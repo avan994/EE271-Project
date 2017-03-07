@@ -265,7 +265,7 @@ module `mname()`
    assign next_rt_samp_R14S[0] = sample_R14S[0]+1;//next right x is just to the right 
    assign next_rt_samp_R14S[1] = sample_R14S[1];//next right y is on the same row
    assign at_right_edg_R14H = (sample_R14S[0] == box_R14S[1][0]);
-   assign at_top_edg_R14H = (sample_R14S[0] == box_R14S[1][1]);
+   assign at_top_edg_R14H = (sample_R14S[1] == box_R14S[1][1]);
    assign at_end_box_R14H = at_right_edg_R14H & at_top_edg_R14H;//if sample is right and top it is end of the box
    
 
