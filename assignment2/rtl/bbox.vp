@@ -21,12 +21,7 @@
  *   3 x,y vertices corresponding to tri
  * 
  * Global Signals: 
- *   clk, rsts[0][1] = ~b_x[0] && b_x[2];
-      UR_box_cases[0][2] = ~b_x[1] && ~b_x[2]; 
-      
- * 
- * Function:
- *   Determine a bounding box for the polygon
+ *   clk, rsts
  *   represented by the vertices.
  * 
  *   Clamp the Bounding Box to the subsample pixel
@@ -358,15 +353,14 @@ module `mname()`
 
       //////// ASSIGN "out_box_R10S" and "outvalid_R10H"
       
-      //LL X
-      out_box_R10S[`$LL`][`$X`] = (rounded_box_R10S[`$LL`][`$X`] > 'b0) 
+      out_box_R10S[`$LL`][`$X`] = (rounded_box_R10S[`$LL`][`$X`] > 0) 
         ? rounded_box_R10S[`$LL`][`$X`] 
-        : 'b0;
+        : 0;
 
-      //LL Y
-      out_box_R10S[`$LL`][`$Y`] = (rounded_box_R10S[`$LL`][`$Y`] > 'b0) 
+      
+      out_box_R10S[`$LL`][`$Y`] = (rounded_box_R10S[`$LL`][`$Y`] > 0) 
         ? rounded_box_R10S[`$LL`][`$Y`] 
-        : 'b0; 
+        : 0; 
         
       //UR X
       out_box_R10S[`$UR`][`$X`] = (rounded_box_R10S[`$UR`][`$X`] < screen_RnnnnS[`$X`]) 
@@ -379,10 +373,10 @@ module `mname()`
         : screen_RnnnnS[`$Y`]; 
         
       outvalid_R10H = validPoly_R10H 
-        && ((rounded_box_R10S[`$LL`][`$X`] > screen_RnnnnS[`$X`]) 
-        && (rounded_box_R10S[`$LL`][`$Y`] > screen_RnnnnS[`$Y`])) 
-        && ((rounded_box_R10S[`$UR`][`$X`] < 'b0)
-        && (rounded_box_R10S[`$UR`][`$Y`] < 'b0));
+        && ((rounded_box_R10S[`$LL`][`$X`] <= screen_RnnnnS[`$X`]) 
+        && (rounded_box_R10S[`$LL`][`$Y`] <= screen_RnnnnS[`$Y`])) 
+        && ((rounded_box_R10S[`$UR`][`$X`] >= 0)
+        && (rounded_box_R10S[`$UR`][`$Y`] >= 0));
    end
 
    // ***************** End of Step 3 *********************
