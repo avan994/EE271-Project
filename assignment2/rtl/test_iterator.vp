@@ -249,7 +249,7 @@ module `mname()`
    logic 				at_right_edg_R14H;      //Current sample at right edge of bbox?
    logic 				at_top_edg_R14H;        //Current sample at top edge of bbox?
    logic 				at_end_box_R14H;        //Current sample at end of bbox?
-   logic signed [`$sig_fig`-1:0]        samples_per_pixel;      //number of smaples per pixel 
+   //logic signed [`$sig_fig`-1:0]        samples_per_pixel;      //number of smaples per pixel 
 
    //////
    ////// First calculate the values of the helper signals using CURRENT STATES
@@ -281,8 +281,8 @@ module `mname()`
    assign next_up_samp_R14S[0] = box_R14S[0][0];//next up x always starts at left edge of bounding box
    //assign next_up_samp_R14S[1] = sample_R14S[1]+samples_per_pixel;//next up y is one row above current y
    //assign next_rt_samp_R14S[0] = sample_R14S[0]+samples_per_pixel;//next right x is just to the right 
-assign next_up_samp_R14S[1] = sample_R14S[1]+(subSample_RnnnnU<<(`$radix`-3));
-assign next_rt_samp_R14S[0] = sample_R14S[0]+(subSample_RnnnnU<<(`$radix`-3));
+   assign next_up_samp_R14S[1] = sample_R14S[1]+(subSample_RnnnnU<<(`$radix`-3));
+   assign next_rt_samp_R14S[0] = sample_R14S[0]+(subSample_RnnnnU<<(`$radix`-3));
    assign next_rt_samp_R14S[1] = sample_R14S[1];//next right y is on the same row
    assign at_right_edg_R14H = (sample_R14S[0] == box_R14S[1][0]);
    assign at_top_edg_R14H = (sample_R14S[1] == box_R14S[1][1]);
