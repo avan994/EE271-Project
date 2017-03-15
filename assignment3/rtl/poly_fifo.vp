@@ -53,8 +53,8 @@ module `mname` (
    logic isQuad_array[`$fifo_size`-1:0]; 
    logic signed [`$sig_fig`-1:0] box_array[`$fifo_size`-1:0][1:0][1:0];
    
-   logic [`$size_bits-1`:0] nRead, nextRead;
-   logic [`$size_bits-1`:0] nWrite, nextWrite;
+   logic [`$size_bits`-1:0] nRead, nextRead;
+   logic [`$size_bits`-1:0] nWrite, nextWrite;
    logic enWrite, enRead;
    
    logic signed [`$sig_fig`-1:0] poly [`$verts`-1:0][`$axis`-1:0] = poly_array[nWrite];
@@ -90,7 +90,7 @@ module `mname` (
    //;                        PipelineDepth=>1,
    //;                        Retime=>'NO' );
    `$d_nwr->instantiate()`(
-			      .in(nextRead) , 
+			      .in(nextWrite) , 
 			      .clk(clk) , .reset(rst), .en(!enWrite),
 			      .out(nWrite));
    
