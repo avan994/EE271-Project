@@ -12,12 +12,14 @@
  * PARAMETERIZATION
  * ***************************************************************************/
 //; # module parameters
-//; my $fifo_size       = parameter(Name='FifoSize',
-//;                                 Val=>4, Min=>2, Step=>1, 
-//;                                 Doc=>"Number of entries in FIFO. Must be multiple of 2.");
-//; my $size_bits       = parameter(Name='FifoSize',
-//;                                 Val=>2, Min=>1, Step=>1, 
-//;                                 Doc=>"Must be exactly Log2 of fifo size");
+//; my $fifo_size = 4;
+//; my $size_bits = 2;
+// my $fifo_size       = parameter(Name='FifoSize',
+//                                 Val=>4, Min=>2, Step=>1, 
+//                                 Doc=>"Number of entries in FIFO. Must be multiple of 2.");
+// my $size_bits       = parameter(Name='FifoSize',
+//                                 Val=>2, Min=>1, Step=>1, 
+//                                 Doc=>"Must be exactly Log2 of fifo size");
 //; my $sig_fig    = parameter(Name=>'SigFig',
 //;                            Val=>24, Min=>1, Step=>1, 
 //;                            Doc=>"Bits in color and position.");
@@ -32,8 +34,8 @@
 //;                            Doc=>"Number of color channels");
 
 module `mname` (
-		input logic  clk, reset, read, write, 
-		output logic full, empty;
+		input logic  clk, rst, read, write, 
+		output logic full, empty,
 
 		input logic signed [`$sig_fig`-1:0] poly_in[`$verts`-1:0][`$axis`-1:0],
   	    input logic unsigned [`$sig_fig`-1:0] color_in[`$colors`-1:0], 
@@ -43,17 +45,19 @@ module `mname` (
 		output logic signed [`$sig_fig`-1:0] poly_out[`$verts`-1:0][`$axis`-1:0], 
   	    output logic unsigned [`$sig_fig`-1:0] color_out[`$colors`-1:0] , 
    	    output logic isQuad_out, 
-        output logic signed [`$sig_fig`-1:0] box_out[1:0][1:0], 
+        output logic signed [`$sig_fig`-1:0] box_out[1:0][1:0]
    );
-
-   logic signed [`$sig_fig`-1:0] poly_array[`$fifo_size-1`:0][`$verts`-1:0][`$axis`-1:0],
-   logic unsigned [`$sig_fig`-1:0] color_array [`$fifo_size-1`:0][`$colors`-1:0] , 
-   logic isQuad_array[`$fifo_size-1`:0]; 
-   logic signed [`$sig_fig`-1:0] box_array[`$fifo_size-1`:0][1:0][1:0], 
+   
+   logic signed [`$sig_fig`-1:0] poly_array[`$fifo_size`-1:0][`$verts`-1:0][`$axis`-1:0];
+   logic unsigned [`$sig_fig`-1:0] color_array [`$fifo_size`-1:0][`$colors`-1:0] ;
+   logic isQuad_array[`$fifo_size`-1:0]; 
+   logic signed [`$sig_fig`-1:0] box_array[`$fifo_size`-1:0][1:0][1:0];
    
    logic [`$size_bits-1`:0] nRead, nextRead;
    logic [`$size_bits-1`:0] nWrite, nextWrite;
-   logic enWrite;
+   logic enWrite, enRead;
+   
+   logic signed [`$sig_fig`-1:0] poly [`$verts`-1:0][`$axis`-1:0] = poly_array[nWrite];
    
    always_comb begin
    	  empty = (nRead == nWrite);
@@ -62,11 +66,12 @@ module `mname` (
       nextRead = nRead + 1;
       nextWrite = nWrite + 1;
       enWrite = (!full && write);
+      enRead = (!empty && read);
 
-      poly_out = poly_array[nRead];
+      /*poly_out = poly_array[nRead];
       color_out = color_array[nRead];
       isQuad_out = isQuad_array[nRead];
-      box_out = box_array[nRead];
+      box_out = box_array[nRead];*/
    end
    
    /* Manage queue parameters after reads/writes */
@@ -77,8 +82,8 @@ module `mname` (
    //;                        Retime=>'NO' );
    `$d_nrd->instantiate()`(
 			      .in(nextRead) , 
-			      .clk(clk) , .reset(rst), .en(!full && read),
-			      .out(nRead);
+			      .clk(clk) , .reset(rst), .en(!enRead),
+			      .out(nRead));
    
    //; my $d_nwr = generate( 'dff', "d_nwr", 
    //;                        BitWidth=>$size_bits,
@@ -87,7 +92,7 @@ module `mname` (
    `$d_nwr->instantiate()`(
 			      .in(nextRead) , 
 			      .clk(clk) , .reset(rst), .en(!enWrite),
-			      .out(nWrite);
+			      .out(nWrite));
    
    /* Write in the values into the array upon write request */
    
@@ -125,7 +130,7 @@ module `mname` (
 			       .out(box_array[nWrite]));
    
    //; my $d_bbx_f4 = generate( 'dff', "d_bbx_f4", 
-   //;                        BitWidth=>2,
+   //;                        BitWidth=>1,
    //;                        PipelineDepth=>1,
    //;                        Retime=>'NO' );
    `$d_bbx_f4->instantiate()`(
@@ -133,4 +138,48 @@ module `mname` (
 			      .clk(clk) , .reset(rst), .en(!enWrite),
 			      .out(isQuad_array[nWrite]));
    
+/* Read in array values */
+
+   //; my $d_bbx_f1r = generate( 'dff3', "d_bbx_f1r", 
+   //;                        BitWidth=>$sig_fig,
+   //;                        ArraySize1=>$verts,
+   //;                        ArraySize2=>$axis,
+   //;                        PipelineDepth=>1,
+   //;                        Retime=>'NO' );
+   `$d_bbx_f1r->instantiate()` (
+			       .out(poly_out) , 
+			       .clk(clk) , .reset(rst), .en(!enRead),
+			       .in(poly_array[nRead]));
+   
+   //; my $d_bbx_f2r = generate( 'dff2', "d_bbx_f2r", 
+   //;                        BitWidth=>$sig_fig,
+   //;                        ArraySize1=>$colors,
+   //;                        PipelineDepth=>1,
+   //;                        Retime=>'NO' );
+   `$d_bbx_f2r->instantiate()`(
+			      .out(color_out) , 
+			      .clk(clk) , .reset(rst), .en(!enRead),
+			      .in(color_array[nRead]));
+   
+   //; my $d_bbx_f3r = generate( 'dff3', "d_bbx_f3r", 
+   //;                        BitWidth=>$sig_fig,
+   //;                        ArraySize1=>2,
+   //;                        ArraySize2=>2,
+   //;                        PipelineDepth=>1,
+   //;                        Retime=>'NO' );
+   `$d_bbx_f3r->instantiate()` (
+			       .out(box_out) , 
+			       .clk(clk) , .reset(rst), .en(!enRead),
+			       .in(box_array[nRead]));
+   
+   //; my $d_bbx_f4r = generate( 'dff', "d_bbx_f4r", 
+   //;                        BitWidth=>1,
+   //;                        PipelineDepth=>1,
+   //;                        Retime=>'NO' );
+   `$d_bbx_f4r->instantiate()`(
+			      .out(isQuad_out) , 
+			      .clk(clk) , .reset(rst), .en(!enRead),
+			      .in(isQuad_array[nRead]));
+
+
 endmodule 

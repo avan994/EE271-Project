@@ -154,12 +154,12 @@ module `mname()`
 			     .validPoly_R13H(validPoly_R13H_tf) 
 			     ) ; 
 			     
-   //; my $polyfifo = generate( 'polyfifo', "polyfifo", 
+   //; my $poly_fifo = generate( 'poly_fifo', "poly_fifo", 
    //;                        SigFig=>$sig_fig,
    //;                        Vertices=>$verts,
    //;                        Axis=>$axis,
    //;                        Colors=>$colors,);
-   `$polyfifo -> instantiate()` (
+   `$poly_fifo -> instantiate()` (
 			     .poly_in(poly_R13S_tf) ,
 			     .color_in(color_R13U_tf) ,	      
 			     .isQuad_in(isQuad_R13H_tf) ,
@@ -176,7 +176,7 @@ module `mname()`
 			     .color_out(color_R13U) ,	      
 			     .isQuad_out(isQuad_R13H),
 			     .box_out(box_R13S),
-			      empty(validPoly_R13H)
+			     .empty(validPoly_R13H)
 			     ) ;   
    
    
@@ -206,7 +206,7 @@ module `mname()`
 				      .sample_R14S(sample_R14S),
 				      .validSamp_R14H(validSamp_R14H),
 				      
-				      .fifo_full(fifo_full) /* +From_FIFO */
+				      .fifo_full(fifo_full), /* +From_FIFO */
 				      .iter_read(iter_read) /* +To_FIFO */
 				      ) ;
 
