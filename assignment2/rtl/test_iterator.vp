@@ -155,6 +155,17 @@ module `mname()`
    logic 				next_isQuad_R14H;                   
    logic 				next_validSamp_R14H;                 
    logic 				next_halt_RnnnnL;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//I added all these signals to modify the state machine
+   logic 				next_count[2:0];
+   logic 				count[2:0];
+   logic 				new_line;
+   logic signed [`$sig_fig`-1:0]        left_edge, //Sample Location of the left edge
+   logic signed [`$sig_fig`-1:0]        next_left_edge, //Sample Location of the left edge
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    
    
    // Instantiate registers for storing these states
@@ -215,7 +226,7 @@ module `mname()`
    logic signed [`$sig_fig`-1:0] 	box_R14S[1:0][1:0];    		// the state for current bounding box
    logic signed [`$sig_fig`-1:0] 	next_box_R14S[1:0][1:0];
    typedef enum logic {
-			 WAIT_STATE, TEST_STATE
+			 WAIT_STATE, RIGHT_STATE, STORE_STATE, RIGHT2_STATE, UP_LEFT_STATE  
 		       } state_t;  
    state_t                        state_R14H;     //State Designation (Waiting or Testing or End)
    state_t                        next_state_R14H;        //Next Cycles State 
@@ -241,15 +252,55 @@ module `mname()`
 			   .in(next_state_R14H) , 
 			   .clk(clk) , .reset(rst), .en(1'b1),
 			   .out(state_R14H));
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   //I added this register to not have to interface between test_iterator and sample test
+   //; my $d307 = generate( 'dff', "d307", 
+   //;                        BitWidth=>1,
+   //;                        PipelineDepth=>1,
+   //;                        Retime=>'NO' );
+   `$d306->instantiate()` (
+			   .in(next_count) , 
+			   .clk(clk) , .reset(rst), .en(new_line),
+			   .out(count));
+
+   //I added this register to store the left edge
+   //; my $d303 = generate( 'dff2', "d303", 
+   //;                        BitWidth=>$sig_fig,
+   //;                        ArraySize1=>2,
+   //;                        PipelineDepth=>1,
+   //;                        Retime=>'NO' );
+   `$d303->instantiate()` (
+			   .in(next_left_edge) , 
+			   .clk(clk) , .reset(rst), .en(1'b1),
+			   .out(left_edge));	
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
    
    
+
+
    // define some helper signals
    logic signed [`$sig_fig`-1:0] 	next_up_samp_R14S[1:0]; //If jump up, next sample
    logic signed [`$sig_fig`-1:0] 	next_rt_samp_R14S[1:0]; //If jump right, next sample
    logic 				at_right_edg_R14H;      //Current sample at right edge of bbox?
    logic 				at_top_edg_R14H;        //Current sample at top edge of bbox?
    logic 				at_end_box_R14H;        //Current sample at end of bbox?
-   //logic signed [`$sig_fig`-1:0]        samples_per_pixel;      //number of smaples per pixel 
+   //logic signed [`$sig_fig`-1:0]        samples_per_pixel;      //number of smaples per pixel
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   //I added these helper signals
+   logic 				done_moving_left;       //Reached left edge of bbox or a miss (left edge of triangle)
+   logic 				done_moving_right;      //Reached right edge of bbox or a miss (right edge of triangle)
+   logic 				at_left_edge;           //Reached left edge of bbox or a miss (left edge of triangle)
+   logic 				finished_triangle;      //Finished iterating over what should be hits in triangle
+   logic signed [`$sig_fig`-1:0] 	next_lft_samp_R14S[1:0]; //If jump left, next sample
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ 
 
    //////
    ////// First calculate the values of the helper signals using CURRENT STATES
@@ -278,7 +329,7 @@ module `mname()`
       
    end //always_comb*/
  
-   assign next_up_samp_R14S[0] = box_R14S[0][0];//next up x always starts at left edge of bounding box
+   assign next_up_samp_R14S[0] = left_edge;//next up x always starts at left edge of bounding box
    //assign next_up_samp_R14S[1] = sample_R14S[1]+samples_per_pixel;//next up y is one row above current y
    //assign next_rt_samp_R14S[0] = sample_R14S[0]+samples_per_pixel;//next right x is just to the right 
    assign next_up_samp_R14S[1] = sample_R14S[1]+(subSample_RnnnnU<<(`$radix`-3));
@@ -290,7 +341,17 @@ module `mname()`
    
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   assign at_left_edge = (sample_R14S[0] == box_R14S[0][0]);//at left edge of bbox
+   assign done_moving_left = at_left_edge || (~hit && (count == 6));//at left edge of triangle now start moving right
+   assign done_moving_right = at_right_edg_R14H || (~hit);//at right edge of triangle now move up a row
+   assign finished_triangle = done_moving_right && at_top_edg_R14H;//done with triangle go back to wait
+   assign next_lft_samp_R14S[0] = sample_R14S[0]-(subSample_RnnnnU<<(`$radix`-3));
+   assign next_lft_samp_R14S[1] = sample_R14S[1];//next right y is on the same row
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -308,14 +369,73 @@ module `mname()`
 	   next_sample_R14S    = box_R13S[0]; 
 	   next_validSamp_R14H = validPoly_R13H;
 	   next_isQuad_R14H    = isQuad_R13H;
-	   next_state_R14H     = (validPoly_R13H) ? TEST_STATE : WAIT_STATE;
+	   next_state_R14H     = (validPoly_R13H) ? RIGHT_STATE : WAIT_STATE;
 	   next_poly_R14S      = poly_R13S;
 	   next_color_R14U     = color_R13U;
 	   next_box_R14S       = box_R13S;
 	   next_halt_RnnnnL    = ~validPoly_R13H;//1;?
+           next_count          = 0;
+           new_line            = 0;
+           next_left_edge      = box_R13S[0][0];
 	end
-	( TEST_STATE ): begin
-	   next_sample_R14S    = (at_right_edg_R14H) ? next_up_samp_R14S : next_rt_samp_R14S;
+	( RIGHT_STATE ): begin
+	   next_sample_R14S    = next_rt_samp_R14S;
+	   next_validSamp_R14H = 1;
+	   next_isQuad_R14H    = isQuad_R14H;
+	   next_state_R14H     = (hit) ? STORE_STATE : RIGHT_STATE; 
+	   next_poly_R14S      = poly_R14S; 
+	   next_color_R14U     = color_R14U; 
+	   next_box_R14S       = box_R14S; 
+	   next_halt_RnnnnL    = 0;
+           next_count          = 0;
+           new_line            = 0;
+           next_left_edge      = left_edge;
+	end
+        ( STORE_STATE ): begin
+	   next_sample_R14S[0] = left_edge;
+           next_sample_R14S[1] = sample_R14S[1]; 
+	   next_validSamp_R14H = 0;
+	   next_isQuad_R14H    = isQuad_R14H;
+	   next_state_R14H     = RIGHT2_STATE;
+	   next_poly_R14S      = poly_R14S; 
+	   next_color_R14U     = color_R14U; 
+	   next_box_R14S       = box_R14S;
+	   next_halt_RnnnnL    = 0;
+           next_count          = 0;
+           new_line            = 0;
+           next_left_edge      = sample_R14S[0]-6;//minus 6 because delay of 6 cycles to get hit signal from sampletest
+	end
+        ( RIGHT2_STATE ): begin
+	   next_sample_R14S    = next_rt_samp_R14S;
+	   next_validSamp_R14H = ~finished_triangle;
+	   next_isQuad_R14H    = isQuad_R14H;
+	   next_state_R14H     = (finished_triangle) ? WAIT_STATE : ((done_moving_right) ? UP_LEFT_STATE : RIGHT2_STATE);
+	   next_poly_R14S      = poly_R14S; 
+	   next_color_R14U     = color_R14U; 
+	   next_box_R14S       = box_R14S;
+	   next_halt_RnnnnL    = finished_triangle;
+           next_count          = 0;
+           new_line            = 0;
+           next_left_edge      = left_edge;
+	end
+        ( UP_LEFT_STATE ): begin
+	   next_sample_R14S    = (count == 1) ? next_up_samp_R14S : next_lft_samp_R14S;
+	   next_validSamp_R14H = 1;
+	   next_isQuad_R14H    = isQuad_R14H;
+	   next_state_R14H     = (done_moving_left) ? STORE_STATE : UP_LEFT_STATE;
+	   next_poly_R14S      = poly_R14S; 
+	   next_color_R14U     = color_R14U; 
+	   next_box_R14S       = box_R14S;
+	   next_halt_RnnnnL    = 0;
+           next_count          = count + 1;
+           new_line            = 1;
+           next_left_edge      = left_edge;
+	end        
+      endcase // case ( state_R14H )
+/*
+Signals from old test state
+
+ next_sample_R14S    = (at_right_edg_R14H) ? next_up_samp_R14S : next_rt_samp_R14S;
 	   next_validSamp_R14H = ~at_end_box_R14H;//validSamp_R14H;//(~at_end_box_R14H);//if not at the end of the box sample valid
 	   next_isQuad_R14H    = isQuad_R14H;
 	   next_state_R14H     = (at_end_box_R14H) ? WAIT_STATE : TEST_STATE; 
@@ -323,8 +443,9 @@ module `mname()`
 	   next_color_R14U     = color_R14U; 
 	   next_box_R14S       = box_R14S; 
 	   next_halt_RnnnnL    = (at_end_box_R14H);//0?
-	end      
-      endcase // case ( state_R14H )
+           next_count          = 0;
+
+*/
       
    end //always_comb
    
