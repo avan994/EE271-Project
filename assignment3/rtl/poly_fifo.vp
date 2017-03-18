@@ -57,10 +57,8 @@ module `mname` (
    logic [`$size_bits`-1:0] nWrite, nextWrite;
    logic enWrite, enRead;
    
-   logic signed [`$sig_fig`-1:0] poly [`$verts`-1:0][`$axis`-1:0] = poly_array[nWrite];
-   
    always_comb begin
-   	  empty = (nRead == nWrite);
+      empty = (nRead == nWrite);
       full = (nRead == nextWrite);
 
       nextRead = nRead + 1;
@@ -68,10 +66,7 @@ module `mname` (
       enWrite = (!full && write);
       enRead = (!empty && read);
 
-      /*poly_out = poly_array[nRead];
-      color_out = color_array[nRead];
-      isQuad_out = isQuad_array[nRead];
-      box_out = box_array[nRead];*/
+      isQuad_out = 1'b0;
    end
    
    /* Manage queue parameters after reads/writes */
@@ -96,47 +91,18 @@ module `mname` (
    
    /* Write in the values into the array upon write request */
    
+   always_ff @(posedge clk) begin
+      
+      poly_array[nWrite] <= enWrite ? poly_in
+        : poly_array[nWrite];
+      color_array[nWrite] <= enWrite ? color_in
+        : color_array[nWrite];
+      box_array[nWrite] <= enWrite ? box_in
+        : box_array[nWrite];
+      isQuad_array[nWrite] <= 'b0; /*enWrite ? isQuad_in
+        : isQuad_array[nWrite];*/
+   end
    
-   //; my $d_bbx_f1 = generate( 'dff3', "d_bbx_f1", 
-   //;                        BitWidth=>$sig_fig,
-   //;                        ArraySize1=>$verts,
-   //;                        ArraySize2=>$axis,
-   //;                        PipelineDepth=>1,
-   //;                        Retime=>'NO' );
-   `$d_bbx_f1->instantiate()` (
-			       .in(poly_in) , 
-			       .clk(clk) , .reset(rst), .en(!enWrite),
-			       .out(poly_array[nWrite]));
-   
-   //; my $d_bbx_f2 = generate( 'dff2', "d_bbx_f2", 
-   //;                        BitWidth=>$sig_fig,
-   //;                        ArraySize1=>$colors,
-   //;                        PipelineDepth=>1,
-   //;                        Retime=>'NO' );
-   `$d_bbx_f2->instantiate()`(
-			      .in(color_in) , 
-			      .clk(clk) , .reset(rst), .en(!enWrite),
-			      .out(color_array[nWrite]));
-   
-   //; my $d_bbx_f3 = generate( 'dff3', "d_bbx_f3", 
-   //;                        BitWidth=>$sig_fig,
-   //;                        ArraySize1=>2,
-   //;                        ArraySize2=>2,
-   //;                        PipelineDepth=>1,
-   //;                        Retime=>'NO' );
-   `$d_bbx_f3->instantiate()` (
-			       .in(box_in) , 
-			       .clk(clk) , .reset(rst), .en(!enWrite),
-			       .out(box_array[nWrite]));
-   
-   //; my $d_bbx_f4 = generate( 'dff', "d_bbx_f4", 
-   //;                        BitWidth=>1,
-   //;                        PipelineDepth=>1,
-   //;                        Retime=>'NO' );
-   `$d_bbx_f4->instantiate()`(
-			      .in(isQuad_in) , 
-			      .clk(clk) , .reset(rst), .en(!enWrite),
-			      .out(isQuad_array[nWrite]));
    
 /* Read in array values */
 
@@ -176,10 +142,19 @@ module `mname` (
    //;                        BitWidth=>1,
    //;                        PipelineDepth=>1,
    //;                        Retime=>'NO' );
-   `$d_bbx_f4r->instantiate()`(
+   /*`$d_bbx_f4r->instantiate()`(
 			      .out(isQuad_out) , 
 			      .clk(clk) , .reset(rst), .en(!enRead),
-			      .in(isQuad_array[nRead]));
+			      .in(isQuad_array[nRead]));*/
+			      
+   property rb_lt( rst, a , b , c );
+      @(posedge clk) rst | ((a<=b) | !c);
+   endproperty
 
+   assert property( rb_lt( rst, box_in[0][0] , box_in[1][0] , enWrite));
+   assert property( rb_lt( rst, box_in[0][1] , box_in[1][1] , enWrite));
+   
+   assert property( rb_lt( rst, box_array[nRead][0][0] , box_array[nRead][1][0] , enRead));
+   assert property( rb_lt( rst, box_array[nRead][0][1] , box_array[nRead][1][1] , enRead));
 
 endmodule 

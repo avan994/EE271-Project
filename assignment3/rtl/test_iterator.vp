@@ -137,14 +137,14 @@ module `mname()`
    output logic unsigned [`$sig_fig`-1:0] color_R14U[`$colors`-1:0] , //Color of Poly
    output logic signed [`$sig_fig`-1:0] sample_R14S[1:0], //Sample Location to Be Tested
    output logic 			isQuad_R14H, //Micropygon is quad
-   output logic 			validSamp_R14H,                  //Sample and Micropolygon are Valid
+   output logic 			validSamp_R14H                  //Sample and Micropolygon are Valid
    
    /* FIFO control signals */
-   input logic fifo_full,
-   output logic iter_read
+   //input logic fifo_full,
+   //output logic iter_read
    );
    
-   assign halt_RnnnnL = ~fifo_full; /* Anything prior to FIFO now halts when fifo is full */
+   //assign halt_RnnnnL = ~fifo_full; /* Anything prior to FIFO now halts when fifo is full */
    
    // This module implement a Moore machine to iterarte sample points in bbox
    // Recall: a Moore machine is an FSM whose output values are determined 
@@ -201,7 +201,7 @@ module `mname()`
    `$d304->instantiate()` (
 			   .in({next_validSamp_R14H, next_isQuad_R14H, next_halt_RnnnnL}) , 
 			   .clk(clk) , .reset(rst), .en(1'b1),
-			   .out({validSamp_R14H, isQuad_R14H, iter_read})); /* Old halt goes to FIFO */
+			   .out({validSamp_R14H, isQuad_R14H, halt_RnnnnL})); /* Old halt goes to FIFO */
    // Instantiate registers for storing these states
    
 

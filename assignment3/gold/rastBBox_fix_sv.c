@@ -95,8 +95,16 @@ int rastBBox_bbox_check( int   v0_x,     //uPoly
   ll_y = ( !b_y[0] &&  b_y[3] )                 ? poly.v[1].x[1] :  ll_y ;
   ll_y = ( !b_y[1] && !b_y[3] )                 ? poly.v[2].x[1] :  ll_y ;
   ll_y = ( !b_y[2] && !b_y[4] && !b_y[5] && q ) ? poly.v[3].x[1] :  ll_y ;
+  
+  int x1 = poly.v[1].x[0] - poly.v[0].x[0]; 
+  int y1 = poly.v[1].x[1] - poly.v[0].x[1]; 
+  int x2 = poly.v[2].x[0] - poly.v[0].x[0]; 
+  int y2 = poly.v[2].x[1] - poly.v[0].x[1]; 
+   
+  long dist_lg  = x1*y2 - x2*y1;
+  int not_backfacing = (dist_lg < 0);
 
-  valid = (! ((ll_x > screen_w) || (ll_y > screen_h) || (ur_x < 0) || (ur_y < 0)) ) && valid_Poly; 
+  valid = (! ((ll_x > screen_w) || (ll_y > screen_h) || (ur_x < 0) || (ur_y < 0)) ) && (valid_Poly && not_backfacing); 
 
 
   //Clamp BBox
@@ -130,6 +138,7 @@ int rastBBox_bbox_check( int   v0_x,     //uPoly
   correct = check_valid == valid ? correct : 0 ; 
   if( check_valid != valid ){
     printf( "\nerror: valid signal incorrect hw vs gold %i vs %i (valid_input=%i)\n" , check_valid , valid, valid_Poly);
+    printf("\n %i, %i, %i, %i, %i", x1, y1, x2, y2, dist_lg);
     // printf( "\debug: ll_x  vs gold   %d vs %d\n" , ll_x ,check_ll_x);
     // printf( "\debug: ll_y  vs gold   %d vs %d\n" , ll_y ,check_ll_y);
     // printf( "\debug: ur_x  vs gold   %d vs %d\n" , ur_x ,check_ur_x);
