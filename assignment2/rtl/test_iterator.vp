@@ -123,6 +123,7 @@ module `mname()`
    input logic 				isQuad_R13H, //Micropolygon is quad
    input logic signed [`$sig_fig`-1:0] 	box_R13S[1:0][1:0], //Box to iterate for subsamples
    input logic 				validPoly_R13H, //Micropolygon is valid
+   input logic                          hit, //previous sample was a hit (inside the triangle)
 
    //Control Signals
    input logic [3:0] 			subSample_RnnnnU , //Subsample width 
