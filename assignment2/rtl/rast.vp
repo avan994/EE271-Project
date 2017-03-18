@@ -155,7 +155,8 @@ module `mname()`
 				      .color_R13U(color_R13U) ,	      
 				      .isQuad_R13H(isQuad_R13H),
 				      .box_R13S(box_R13S),
-				      .validPoly_R13H(validPoly_R13H),	
+				      .validPoly_R13H(validPoly_R13H),
+                                      .hit(hit_valid_R18H),	
       
 				      .subSample_RnnnnU(subSample_RnnnnU) ,
 				      .halt_RnnnnL(halt_RnnnnL), 
