@@ -1,4 +1,4 @@
-/*
+F/*
  *  Bounding Box Sample Test Iteration
  * 
  *  Inputs:
@@ -162,8 +162,8 @@ module `mname()`
    logic 				next_count[2:0];
    logic 				count[2:0];
    logic 				new_line;
-   logic signed [`$sig_fig`-1:0]        left_edge, //Sample Location of the left edge
-   logic signed [`$sig_fig`-1:0]        next_left_edge, //Sample Location of the left edge
+   logic signed [`$sig_fig`-1:0]        left_edge; //Sample Location of the left edge
+   logic signed [`$sig_fig`-1:0]        next_left_edge; //Sample Location of the left edge
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -226,7 +226,7 @@ module `mname()`
    // define two more states, box_R14S and state_R14H
    logic signed [`$sig_fig`-1:0] 	box_R14S[1:0][1:0];    		// the state for current bounding box
    logic signed [`$sig_fig`-1:0] 	next_box_R14S[1:0][1:0];
-   typedef enum logic {
+   typedef enum bit [2:0] {
 			 WAIT_STATE, RIGHT_STATE, STORE_STATE, RIGHT2_STATE, UP_LEFT_STATE  
 		       } state_t;  
    state_t                        state_R14H;     //State Designation (Waiting or Testing or End)
@@ -260,18 +260,18 @@ module `mname()`
    //;                        BitWidth=>1,
    //;                        PipelineDepth=>1,
    //;                        Retime=>'NO' );
-   `$d306->instantiate()` (
+   `$d307->instantiate()` (
 			   .in(next_count) , 
 			   .clk(clk) , .reset(rst), .en(new_line),
 			   .out(count));
 
    //I added this register to store the left edge
-   //; my $d303 = generate( 'dff2', "d303", 
+   //; my $d308 = generate( 'dff2', "d308", 
    //;                        BitWidth=>$sig_fig,
-   //;                        ArraySize1=>2,
+   //;                        ArraySize1=>1,
    //;                        PipelineDepth=>1,
    //;                        Retime=>'NO' );
-   `$d303->instantiate()` (
+   `$d308->instantiate()` (
 			   .in(next_left_edge) , 
 			   .clk(clk) , .reset(rst), .en(1'b1),
 			   .out(left_edge));	
