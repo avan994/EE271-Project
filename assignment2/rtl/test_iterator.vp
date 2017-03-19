@@ -262,7 +262,7 @@ module `mname()`
    //;                        Retime=>'NO' );
    `$d307->instantiate()` (
 			   .in(next_count) , 
-			   .clk(clk) , .reset(rst), .en(new_line),
+			   .clk(clk) , .reset(rst), .en(1'b1),
 			   .out(count));
 
    //I added this register to store the left edge
@@ -423,7 +423,7 @@ module `mname()`
 	end
         ( UP_LEFT_STATE ): begin
 	   next_sample_R14S    = (count == 0) ? next_up_samp_R14S : next_lft_samp_R14S;
-	   next_validSamp_R14H = 1'b1;
+	   next_validSamp_R14H = ~done_moving_left;//1'b1;
 	   next_isQuad_R14H    = isQuad_R14H;
 	   next_state_R14H     = (done_moving_left) ? STORE_STATE : UP_LEFT_STATE;
 	   next_poly_R14S      = poly_R14S; 
