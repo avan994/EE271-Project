@@ -1,4 +1,4 @@
-F/*
+/*
  *  Bounding Box Sample Test Iteration
  * 
  *  Inputs:
@@ -159,8 +159,8 @@ module `mname()`
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //I added all these signals to modify the state machine
-   logic 				next_count[2:0];
-   logic 				count[2:0];
+   logic unsigned [2:0]			next_count;
+   logic unsigned [2:0]			count;
    logic 				new_line;
    logic signed [`$sig_fig`-1:0]        left_edge; //Sample Location of the left edge
    logic signed [`$sig_fig`-1:0]        next_left_edge; //Sample Location of the left edge
@@ -246,7 +246,7 @@ module `mname()`
    
    
    //; my $d306 = generate( 'dff', "d306", 
-   //;                        BitWidth=>1,
+   //;                        BitWidth=>3,
    //;                        PipelineDepth=>1,
    //;                        Retime=>'NO' );
    `$d306->instantiate()` (
@@ -257,7 +257,7 @@ module `mname()`
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    //I added this register to not have to interface between test_iterator and sample test
    //; my $d307 = generate( 'dff', "d307", 
-   //;                        BitWidth=>1,
+   //;                        BitWidth=>3,
    //;                        PipelineDepth=>1,
    //;                        Retime=>'NO' );
    `$d307->instantiate()` (
@@ -266,9 +266,8 @@ module `mname()`
 			   .out(count));
 
    //I added this register to store the left edge
-   //; my $d308 = generate( 'dff2', "d308", 
+   //; my $d308 = generate( 'dff', "d308", 
    //;                        BitWidth=>$sig_fig,
-   //;                        ArraySize1=>1,
    //;                        PipelineDepth=>1,
    //;                        Retime=>'NO' );
    `$d308->instantiate()` (
@@ -376,39 +375,42 @@ module `mname()`
 	   next_box_R14S       = box_R13S;
 	   next_halt_RnnnnL    = ~validPoly_R13H;//1;?
            next_count          = 0;
-           new_line            = 0;
+           new_line            = 1'b0;
            next_left_edge      = box_R13S[0][0];
 	end
 	( RIGHT_STATE ): begin
 	   next_sample_R14S    = next_rt_samp_R14S;
-	   next_validSamp_R14H = 1;
+	   next_validSamp_R14H = ~(hit || at_right_edg_R14H);
 	   next_isQuad_R14H    = isQuad_R14H;
-	   next_state_R14H     = (hit) ? STORE_STATE : RIGHT_STATE; 
+	   next_state_R14H     = (hit || at_right_edg_R14H) ? STORE_STATE : RIGHT_STATE; 
 	   next_poly_R14S      = poly_R14S; 
 	   next_color_R14U     = color_R14U; 
 	   next_box_R14S       = box_R14S; 
-	   next_halt_RnnnnL    = 0;
+	   next_halt_RnnnnL    = 1'b0;
            next_count          = 0;
-           new_line            = 0;
-           next_left_edge      = left_edge;
+           new_line            = 1'b0;
+           next_left_edge      = (at_right_edg_R14H) ? left_edge : sample_R14S[0];
 	end
         ( STORE_STATE ): begin
-	   next_sample_R14S[0] = left_edge;
-           next_sample_R14S[1] = sample_R14S[1]; 
-	   next_validSamp_R14H = 0;
+	   //next_sample_R14S[0] = left_edge;
+           //next_sample_R14S[1] = sample_R14S[1];
+           next_sample_R14S    = sample_R14S; 
+	   next_validSamp_R14H = 1'b0;
 	   next_isQuad_R14H    = isQuad_R14H;
 	   next_state_R14H     = RIGHT2_STATE;
 	   next_poly_R14S      = poly_R14S; 
 	   next_color_R14U     = color_R14U; 
 	   next_box_R14S       = box_R14S;
-	   next_halt_RnnnnL    = 0;
+	   next_halt_RnnnnL    = 1'b0;
            next_count          = 0;
-           new_line            = 0;
-           next_left_edge      = sample_R14S[0]-6;//minus 6 because delay of 6 cycles to get hit signal from sampletest
+           new_line            = 1'b0;
+           next_left_edge      = left_edge;//minus 6 because delay of 6 cycles to get hit signal from sampletest
 	end
         ( RIGHT2_STATE ): begin
-	   next_sample_R14S    = next_rt_samp_R14S;
-	   next_validSamp_R14H = ~finished_triangle;
+	   next_sample_R14S[0] = (validSamp_R14H) ? next_rt_samp_R14S[0] : left_edge;
+           next_sample_R14S[1] = sample_R14S[1];
+           //next_sample_R14S    = (validSamp_R14H) ? next_rt_samp_R14S : ;
+	   next_validSamp_R14H = ~done_moving_right;//finished_triangle;
 	   next_isQuad_R14H    = isQuad_R14H;
 	   next_state_R14H     = (finished_triangle) ? WAIT_STATE : ((done_moving_right) ? UP_LEFT_STATE : RIGHT2_STATE);
 	   next_poly_R14S      = poly_R14S; 
@@ -416,20 +418,20 @@ module `mname()`
 	   next_box_R14S       = box_R14S;
 	   next_halt_RnnnnL    = finished_triangle;
            next_count          = 0;
-           new_line            = 0;
+           new_line            = 1'b0;
            next_left_edge      = left_edge;
 	end
         ( UP_LEFT_STATE ): begin
-	   next_sample_R14S    = (count == 1) ? next_up_samp_R14S : next_lft_samp_R14S;
-	   next_validSamp_R14H = 1;
+	   next_sample_R14S    = (count == 0) ? next_up_samp_R14S : next_lft_samp_R14S;
+	   next_validSamp_R14H = 1'b1;
 	   next_isQuad_R14H    = isQuad_R14H;
 	   next_state_R14H     = (done_moving_left) ? STORE_STATE : UP_LEFT_STATE;
 	   next_poly_R14S      = poly_R14S; 
 	   next_color_R14U     = color_R14U; 
 	   next_box_R14S       = box_R14S;
-	   next_halt_RnnnnL    = 0;
-           next_count          = count + 1;
-           new_line            = 1;
+	   next_halt_RnnnnL    = 1'b0;
+           next_count          = (count == 6) ? count : count + 1;
+           new_line            = 1'b1;
            next_left_edge      = left_edge;
 	end        
       endcase // case ( state_R14H )
