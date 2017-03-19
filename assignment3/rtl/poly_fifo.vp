@@ -91,7 +91,6 @@ module `mname` (
    /* Write in the values into the array upon write request */
    
    always_ff @(posedge clk) begin
-      
       poly_array[nWrite] <= enWrite ? poly_in
         : poly_array[nWrite];
       color_array[nWrite] <= enWrite ? color_in
