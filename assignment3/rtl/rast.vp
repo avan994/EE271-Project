@@ -108,13 +108,13 @@ module `mname()`
    logic [127:0] 			big_zero;                 //fudge signal to hold zero as a reset value
    
    /* FIFO signals */ 
-   /* From BBOX to FIFO */
    logic  signed [`$sig_fig`-1:0] 	box_R13S_f[1:0][1:0];             // 2 Sets X,Y Fixed Point Values   
    logic  signed [`$sig_fig`-1:0] 	poly_R13S_f[`$verts`-1:0][`$axis`-1:0]; // 4 Sets X,Y Fixed Point Values
    logic 				unsigned [`$sig_fig`-1:0]  color_R13U_f[`$colors`-1:0]  ;       // Color of Poly
    logic 				validPoly_R13H_f;                 // Valid Data for Operation
    logic 				isQuad_R13H_f;                    // Is Poly Quad?
    
+   logic fifo_empty;
    logic fifo_full;
    logic iter_read;
    
@@ -159,7 +159,7 @@ module `mname()`
    //;                        Vertices=>$verts,
    //;                        Axis=>$axis,
    //;                        Colors=>$colors,);
-   /*`$poly_fifo -> instantiate()` (
+   `$poly_fifo -> instantiate()` (
 			     .poly_in(poly_R13S) ,
 			     .color_in(color_R13U) ,	      
 			     .isQuad_in(isQuad_R13H) ,
@@ -170,15 +170,15 @@ module `mname()`
 			     .rst(rst),
 	
 			     .full(fifo_full),
+			     .empty(fifo_empty),
 			     .read(iter_read),
       
 			     .poly_out(poly_R13S_f),
 			     .color_out(color_R13U_f) ,	      
 			     .isQuad_out(isQuad_R13H_f),
 			     .box_out(box_R13S_f),
-			     .empty(validPoly_R13H_f)
-			     ) ;   */
-   
+			     .valid(validPoly_R13S_f)
+			     ); 
    
    //; my $test_iterator = generate( 'test_iterator', "test_iterator", 
    //;                        SigFig=>$sig_fig,
@@ -187,12 +187,12 @@ module `mname()`
    //;                        Axis=>$axis,
    //;                        Colors=>$colors,
    //;                        PipelineDepth=>$pipes_iter);
-   /*`$test_iterator -> instantiate()` (
-				      .poly_R13S(poly_R13S),
-				      .color_R13U(color_R13U) ,	      
-				      .isQuad_R13H(isQuad_R13H),
-				      .box_R13S(box_R13S),
-				      .validPoly_R13H(validPoly_R13H),	
+   `$test_iterator -> instantiate()` (
+				      .poly_R13S(poly_R13S_f),
+				      .color_R13U(color_R13U_f) ,	      
+				      .isQuad_R13H(isQuad_R13H_f),
+				      .box_R13S(box_R13S_f),
+				      .validPoly_R13H(validPoly_R13S_f),	
       
 				      .subSample_RnnnnU(subSample_RnnnnU) ,
 				      .halt_RnnnnL(halt_RnnnnL), 
@@ -206,29 +206,9 @@ module `mname()`
 				      .sample_R14S(sample_R14S),
 				      .validSamp_R14H(validSamp_R14H),
 				      
-				      .fifo_full(fifo_full), */ /* +From_FIFO */
-				      //.iter_read(iter_read) /* +To_FIFO */
-				      //) ;
-				      
-   `$test_iterator -> instantiate()` (
-				      .poly_R13S(poly_R13S),
-				      .color_R13U(color_R13U) ,	      
-				      .isQuad_R13H(isQuad_R13H),
-				      .box_R13S(box_R13S),
-				      .validPoly_R13H(validPoly_R13H),	
-      
-				      .subSample_RnnnnU(subSample_RnnnnU) ,
-				      .halt_RnnnnL(halt_RnnnnL), 
-      
-				      .clk(clk),
-				      .rst(rst),
-      
-				      .poly_R14S(poly_R14S),
-				      .color_R14U(color_R14U) ,	      
-				      .isQuad_R14H(isQuad_R14H),
-				      .sample_R14S(sample_R14S),
-				      .validSamp_R14H(validSamp_R14H)
-				      ) ;
+				      .fifo_full(fifo_full), 
+				      .iter_read(iter_read) 
+				      );
 
    //; my $hash_jtree = generate( 'hash_jtree', "hash_jtree", 
    //;                        SigFig=>$sig_fig,

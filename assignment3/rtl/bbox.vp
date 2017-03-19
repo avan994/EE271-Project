@@ -225,7 +225,6 @@ module `mname()`
      dist_lg  = x1*y2 - x2*y1;
      
      not_backfacing = (dist_lg < 0);
-     //not_backfacing = 'b1;
    end
 
 
