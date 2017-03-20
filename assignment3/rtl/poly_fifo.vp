@@ -14,12 +14,6 @@
 //; # module parameters
 //; my $fifo_size = 4;
 //; my $size_bits = 2;
-// my $fifo_size       = parameter(Name='FifoSize',
-//                                 Val=>4, Min=>2, Step=>1, 
-//                                 Doc=>"Number of entries in FIFO. Must be multiple of 2.");
-// my $size_bits       = parameter(Name='FifoSize',
-//                                 Val=>2, Min=>1, Step=>1, 
-//                                 Doc=>"Must be exactly Log2 of fifo size");
 //; my $sig_fig    = parameter(Name=>'SigFig',
 //;                            Val=>24, Min=>1, Step=>1, 
 //;                            Doc=>"Bits in color and position.");
@@ -52,20 +46,28 @@ module `mname` (
    
    logic signed [`$sig_fig`-1:0] poly_array[`$fifo_size`-1:0][`$verts`-1:0][`$axis`-1:0];
    logic unsigned [`$sig_fig`-1:0] color_array [`$fifo_size`-1:0][`$colors`-1:0] ;
-   logic isQuad_array[`$fifo_size`-1:0]; 
+   //logic isQuad_array[`$fifo_size`-1:0]; 
    logic signed [`$sig_fig`-1:0] box_array[`$fifo_size`-1:0][1:0][1:0];
    
    logic unsigned [`$size_bits`-1:0] nRead, nextRead, nWrite, nextWrite;
    logic enWrite, enRead;
-   
+   logic alreadyRead; 
+ 
    always_comb begin
-      empty = (nRead == nWrite);
-      full = (nRead == nextWrite);
-
       nextRead = nRead + 1;
       nextWrite = nWrite + 1;
+      
+      empty = (nRead == nWrite);
+      full = (nRead == nextWrite);
+      
       enWrite = (!full && write);
-      enRead = (!empty && read);
+      enRead = (!empty && read) && ~alreadyRead;
+      
+      poly_out = poly_array[nRead];
+      color_out = color_array[nRead];
+      isQuad_out = 1'b0;
+      box_out = box_array[nRead];
+      valid = !rst & !empty;
    end
    
    /* Manage queue parameters after reads/writes */
@@ -97,61 +99,23 @@ module `mname` (
         : color_array[nWrite];
       box_array[nWrite] <= enWrite ? box_in
         : box_array[nWrite];
-      isQuad_array[nWrite] <= enWrite ? isQuad_in
-        : isQuad_array[nWrite];
-      
-      valid <= enRead; 
+      alreadyRead <= empty ? 'b0 : read;
+      /*isQuad_array[nWrite] <= enWrite ? isQuad_in
+        : isQuad_array[nWrite];*/
    end
    
    
-/* Read in array values */
-
-   //; my $d_bbx_f1r = generate( 'dff3', "d_bbx_f1r", 
-   //;                        BitWidth=>$sig_fig,
-   //;                        ArraySize1=>$verts,
-   //;                        ArraySize2=>$axis,
-   //;                        PipelineDepth=>1,
-   //;                        Retime=>'NO' );
-   `$d_bbx_f1r->instantiate()` (
-			       .out(poly_out) , 
-			       .clk(clk) , .reset(rst), .en(enRead),
-			       .in(poly_array[nRead]));
-   
-   //; my $d_bbx_f2r = generate( 'dff2', "d_bbx_f2r", 
-   //;                        BitWidth=>$sig_fig,
-   //;                        ArraySize1=>$colors,
-   //;                        PipelineDepth=>1,
-   //;                        Retime=>'NO' );
-   `$d_bbx_f2r->instantiate()`(
-			      .out(color_out) , 
-			      .clk(clk) , .reset(rst), .en(enRead),
-			      .in(color_array[nRead]));
-   
-   //; my $d_bbx_f3r = generate( 'dff3', "d_bbx_f3r", 
-   //;                        BitWidth=>$sig_fig,
-   //;                        ArraySize1=>2,
-   //;                        ArraySize2=>2,
-   //;                        PipelineDepth=>1,
-   //;                        Retime=>'NO' );
-   `$d_bbx_f3r->instantiate()` (
-			       .out(box_out) , 
-			       .clk(clk) , .reset(rst), .en(enRead),
-			       .in(box_array[nRead]));
-   
-   //; my $d_bbx_f4r = generate( 'dff', "d_bbx_f4r", 
-   //;                        BitWidth=>1,
-   //;                        PipelineDepth=>1,
-   //;                        Retime=>'NO' );
-   `$d_bbx_f4r->instantiate()`(
-			      .out(isQuad_out) , 
-			      .clk(clk) , .reset(rst), .en(enRead),
-			      .in(isQuad_array[nRead]));
-			      
 			      
 	 /* Error checking */
    property rb_lt( rst, a , b , c );
       @(posedge clk) rst | ((a<=b) | !c);
    endproperty
+
+  property not_equal( rst, a , b );
+      @(posedge clk) rst | (a != b);
+   endproperty
+   
+   //assert property( not_equal(rst, valid, enRead));
 
    assert property( rb_lt( rst, box_in[0][0] , box_in[1][0] , enWrite));
    assert property( rb_lt( rst, box_in[0][1] , box_in[1][1] , enWrite));
