@@ -407,7 +407,7 @@ module `mname()`
            next_left_edge      = left_edge;//minus 6 because delay of 6 cycles to get hit signal from sampletest
 	end
         ( RIGHT2_STATE ): begin
-	   next_sample_R14S[0] = (validSamp_R14H) ? next_rt_samp_R14S[0] : left_edge;
+	   next_sample_R14S[0] = (validSamp_R14H) ? next_rt_samp_R14S[0] : left_edge+(subSample_RnnnnU<<(`$radix`-3));
            next_sample_R14S[1] = sample_R14S[1];
            //next_sample_R14S    = (validSamp_R14H) ? next_rt_samp_R14S : ;
 	   next_validSamp_R14H = ~done_moving_right;//finished_triangle;
