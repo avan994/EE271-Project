@@ -103,6 +103,7 @@ module `mname()`
    logic 				isQuad_R16H;                    //Micropygon is quad
    logic signed [`$sig_fig`-1:0] 	sample_R16S[1:0];               //Sample Location to Be Tested
    logic 				validSamp_R16H;                 //Sample and Micropolygon are Valid
+   logic                                hit_valid;                     //hit valid signal to send to the test_iterator    
    
    logic [`$sig_fig`-1:0] 		zero;                     //fudge signal to hold zero as a reset value
    logic [127:0] 			big_zero;                 //fudge signal to hold zero as a reset value
@@ -156,7 +157,7 @@ module `mname()`
 				      .isQuad_R13H(isQuad_R13H),
 				      .box_R13S(box_R13S),
 				      .validPoly_R13H(validPoly_R13H),
-                                      .hit(hit_valid_R18H),	
+                                      .hit(hit_valid),	
       
 				      .subSample_RnnnnU(subSample_RnnnnU) ,
 				      .halt_RnnnnL(halt_RnnnnL), 
@@ -218,7 +219,8 @@ module `mname()`
       
 				      .hit_R18S( hit_R18S ),
 				      .color_R18U( color_R18U ),						 
-				      .hit_valid_R18H( hit_valid_R18H ) 
+				      .hit_valid_R18H( hit_valid_R18H ),
+                                      .hit_valid( hit_valid ) 
 				      );
    
 endmodule

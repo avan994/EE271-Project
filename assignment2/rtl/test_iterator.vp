@@ -362,7 +362,7 @@ module `mname()`
    //////
 
    ////// COMPLETE THE FOLLOW ALWAYS_COMB BLOCK
-   
+   // comparing diff files : cmp -l
    always_comb begin
       unique case( state_R14H )
         ( WAIT_STATE ): begin
@@ -379,23 +379,24 @@ module `mname()`
            next_left_edge      = box_R13S[0][0];
 	end
 	( RIGHT_STATE ): begin
-	   next_sample_R14S    = next_rt_samp_R14S;
-	   next_validSamp_R14H = ~(hit || at_right_edg_R14H);
+	   //next_sample_R14S[0] = (hit || at_right_edg_R14H) ? left_edge+(subSample_RnnnnU<<(`$radix`-3)) : next_rt_samp_R14S[0];
+           next_sample_R14S    = (at_right_edg_R14H) ? next_up_samp_R14S : next_rt_samp_R14S;
+	   next_validSamp_R14H = ~at_end_box_R14H;//1'b1;//~(hit);
 	   next_isQuad_R14H    = isQuad_R14H;
-	   next_state_R14H     = (hit || at_right_edg_R14H) ? STORE_STATE : RIGHT_STATE; 
+	   next_state_R14H     = (at_end_box_R14H) ? WAIT_STATE : ((hit) ? RIGHT2_STATE : RIGHT_STATE);//(hit || at_right_edg_R14H) ? RIGHT2_STATE : RIGHT_STATE; 
 	   next_poly_R14S      = poly_R14S; 
 	   next_color_R14U     = color_R14U; 
 	   next_box_R14S       = box_R14S; 
 	   next_halt_RnnnnL    = 1'b0;
            next_count          = 0;
            new_line            = 1'b0;
-           next_left_edge      = (at_right_edg_R14H) ? left_edge : sample_R14S[0];
+           next_left_edge      = (hit && left_edge == box_R13S[0][0]) ? sample_R14S[0] : left_edge;
 	end
         ( STORE_STATE ): begin
-	   //next_sample_R14S[0] = left_edge;
-           //next_sample_R14S[1] = sample_R14S[1];
-           next_sample_R14S    = sample_R14S; 
-	   next_validSamp_R14H = 1'b0;
+	   next_sample_R14S[0] = sample_R14S[0]+(subSample_RnnnnU<<(`$radix`-3));
+           next_sample_R14S[1] = sample_R14S[1];
+           //next_sample_R14S    = sample_R14S; 
+	   next_validSamp_R14H = 1'b1;
 	   next_isQuad_R14H    = isQuad_R14H;
 	   next_state_R14H     = RIGHT2_STATE;
 	   next_poly_R14S      = poly_R14S; 
@@ -407,10 +408,10 @@ module `mname()`
            next_left_edge      = left_edge;//minus 6 because delay of 6 cycles to get hit signal from sampletest
 	end
         ( RIGHT2_STATE ): begin
-	   next_sample_R14S[0] = (validSamp_R14H) ? next_rt_samp_R14S[0] : left_edge+(subSample_RnnnnU<<(`$radix`-3));
-           next_sample_R14S[1] = sample_R14S[1];
-           //next_sample_R14S    = (validSamp_R14H) ? next_rt_samp_R14S : ;
-	   next_validSamp_R14H = ~done_moving_right;//finished_triangle;
+	   //next_sample_R14S[0] = next_rt_samp_R14S[0];//(validSamp_R14H) ? next_rt_samp_R14S[0] : left_edge+(subSample_RnnnnU<<(`$radix`-3));
+           //next_sample_R14S[1] = sample_R14S[1];
+           next_sample_R14S    = (done_moving_right) ? next_up_samp_R14S : next_rt_samp_R14S;
+	   next_validSamp_R14H = ~finished_triangle;//~done_moving_right;//finished_triangle;
 	   next_isQuad_R14H    = isQuad_R14H;
 	   next_state_R14H     = (finished_triangle) ? WAIT_STATE : ((done_moving_right) ? UP_LEFT_STATE : RIGHT2_STATE);
 	   next_poly_R14S      = poly_R14S; 
@@ -422,17 +423,18 @@ module `mname()`
            next_left_edge      = left_edge;
 	end
         ( UP_LEFT_STATE ): begin
-	   next_sample_R14S    = (count == 0) ? next_up_samp_R14S : next_lft_samp_R14S;
-	   next_validSamp_R14H = ~done_moving_left;//1'b1;
+	   next_sample_R14S[0] = (done_moving_left) ? left_edge+(subSample_RnnnnU<<(`$radix`-3)) : next_lft_samp_R14S[0];
+           next_sample_R14S[1] = next_lft_samp_R14S[1];
+	   next_validSamp_R14H = 1'b1;//~done_moving_left;//1'b1;
 	   next_isQuad_R14H    = isQuad_R14H;
-	   next_state_R14H     = (done_moving_left) ? STORE_STATE : UP_LEFT_STATE;
+	   next_state_R14H     = (done_moving_left) ? RIGHT_STATE : UP_LEFT_STATE;
 	   next_poly_R14S      = poly_R14S; 
 	   next_color_R14U     = color_R14U; 
 	   next_box_R14S       = box_R14S;
 	   next_halt_RnnnnL    = 1'b0;
            next_count          = (count == 6) ? count : count + 1;
            new_line            = 1'b1;
-           next_left_edge      = left_edge;
+           next_left_edge      = (done_moving_left) ? sample_R14S[0] : left_edge;
 	end        
       endcase // case ( state_R14H )
 /*
