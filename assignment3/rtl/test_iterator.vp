@@ -137,7 +137,10 @@ module `mname()`
    output logic unsigned [`$sig_fig`-1:0] color_R14U[`$colors`-1:0] , //Color of Poly
    output logic signed [`$sig_fig`-1:0] sample_R14S[1:0], //Sample Location to Be Tested
    output logic 			isQuad_R14H, //Micropygon is quad
-   output logic 			validSamp_R14H                   //Sample and Micropolygon are Valid
+   output logic 			validSamp_R14H,                   //Sample and Micropolygon are Valid
+
+   /* Indicates whether the current sample was a hit, from sample test. */
+   input logic hit
    );
    
    
@@ -151,7 +154,7 @@ module `mname()`
    // then instantiate registers for storing these states
    logic signed [`$sig_fig`-1:0] 	next_poly_R14S[`$verts`-1:0][`$axis`-1:0]; 
    logic unsigned  [`$sig_fig`-1:0] next_color_R14U[`$colors`-1:0] ;
-   logic signed [`$sig_fig`-1:0] 	next_sample_R14S[1:0];  
+   logic signed [`$sig_fig`-1:0] 	next_sample[1:0];  
    logic 				next_isQuad_R14H;                   
    logic 				next_validSamp_R14H;                 
    logic 				next_halt_RnnnnL;
@@ -185,7 +188,7 @@ module `mname()`
    //;                        PipelineDepth=>1,
    //;                        Retime=>'NO' );
    `$d303->instantiate()` (
-			   .in(next_sample_R14S) , 
+			   .in(next_sample) , 
 			   .clk(clk) , .reset(rst), .en(1'b1),
 			   .out(sample_R14S));				 
    
@@ -202,23 +205,32 @@ module `mname()`
 
    
    //; if ($mod_FSM eq 'NO') {
-   
-   //////
-   //////  RTL code for original FSM Goes Here
-   //////
-   
-   // To build this FSM we want to have two more state: one is the working
-   // status of this FSM, and the other is the current bounding box where
-   // we iterate sample points
-   
-   // define two more states, box_R14S and state_R14H
-   logic signed [`$sig_fig`-1:0] 	box_R14S[1:0][1:0];    		// the state for current bounding box
-   logic signed [`$sig_fig`-1:0] 	next_box_R14S[1:0][1:0];
-   typedef enum logic {
-			 WAIT_STATE, TEST_STATE
-		       } state_t;  
-   state_t                        state_R14H;     //State Designation (Waiting or Testing or End)
-   state_t                        next_state_R14H;        //Next Cycles State 
+
+   logic signed [`$sig_fig`-1:0] 	box_R14S[1:0][1:0], next_box_R14S[1:0][1:0];
+
+   enum {
+      TEST = 0,
+      DIRECTION = 1, 
+      INSIDE = 2 
+   } state_index_t;
+
+   /* We want the initial state to be the WAIT state, so set it 0. */
+   enum {
+      WAIT_STATE = 1'b0,
+      TEST_STATE = 1'b1
+   } state_w;
+   enum {
+      RIGHT_STATE = 1'b0,
+      LEFT_STATE = 1'b1
+   } state_d;
+   enum {
+      SEEK_STATE = 1'b0,
+      CHECK_STATE = 1'b1 
+   } state_i;
+
+
+
+   logic [2:0] state_14, next_state_14; 
    
    // instantiate registers for storing these two states
    //; my $d305 = generate( 'dff3', "d305", 
@@ -234,123 +246,112 @@ module `mname()`
    
    
    //; my $d306 = generate( 'dff', "d306", 
-   //;                        BitWidth=>1,
+   //;                        BitWidth=>3,
    //;                        PipelineDepth=>1,
    //;                        Retime=>'NO' );
    `$d306->instantiate()` (
-			   .in(next_state_R14H) , 
+			   .in(next_state_14) , 
 			   .clk(clk) , .reset(rst), .en(1'b1),
-			   .out(state_R14H));
-   
-   
-   // define some helper signals
-   logic signed [`$sig_fig`-1:0] 	next_up_samp_R14S[1:0]; //If jump up, next sample
-   logic signed [`$sig_fig`-1:0] 	next_rt_samp_R14S[1:0]; //If jump right, next sample
-   logic 				at_right_edg_R14H;      //Current sample at right edge of bbox?
-   logic 				at_top_edg_R14H;        //Current sample at top edge of bbox?
-   logic 				at_end_box_R14H;        //Current sample at end of bbox?
-   //logic signed [`$sig_fig`-1:0]        samples_per_pixel;      //number of smaples per pixel 
-
-   //////
-   ////// First calculate the values of the helper signals using CURRENT STATES
-   //////
-
-   // check the comments 'A Note on Signal Names' 
-   // at the begining of the module for the help on
-   // understanding the signals here
-   
-   ////// PLACE YOUR CODE HERE
-  /* always_comb begin
-      unique case( subSample_RnnnnU )
-        ( 4'b0001 ): begin
-	   samples_per_pixel = 17'b00000000000000001<<(`$radix`-3);//64
-        end 
-        ( 4'b0010 ): begin
-	   samples_per_pixel = 17'b00000000000000010<<(`$radix`-3);//16
-        end
-        ( 4'b0100 ): begin
-	   samples_per_pixel = 17'b00000000000000100<<(`$radix`-3);//4
-        end
-        ( 4'b1000 ): begin
-	   samples_per_pixel = 17'b00000000000001000<<(`$radix`-3);//1
-        end
-     endcase // case ( state_R14H )
-      
-   end //always_comb*/
- 
-   assign next_up_samp_R14S[0] = box_R14S[0][0];//next up x always starts at left edge of bounding box
-   //assign next_up_samp_R14S[1] = sample_R14S[1]+samples_per_pixel;//next up y is one row above current y
-   //assign next_rt_samp_R14S[0] = sample_R14S[0]+samples_per_pixel;//next right x is just to the right 
-   assign next_up_samp_R14S[1] = sample_R14S[1]+(subSample_RnnnnU<<(`$radix`-3));
-   assign next_rt_samp_R14S[0] = sample_R14S[0]+(subSample_RnnnnU<<(`$radix`-3));
-   assign next_rt_samp_R14S[1] = sample_R14S[1];//next right y is on the same row
-   assign at_right_edg_R14H = (sample_R14S[0] == box_R14S[1][0]);
-   assign at_top_edg_R14H = (sample_R14S[1] == box_R14S[1][1]);
-   assign at_end_box_R14H = at_right_edg_R14H && at_top_edg_R14H;//if sample is right and top it is end of the box
+			   .out(state_14));
    
 
+   /* Helper Signals */
+   /* ------------------------------------- */   
+   logic signed [`$radix`:0] inc; //increment
 
+   logic signed [`$sig_fig`-1:0] iter_sample[1:0], up_sample[1:0], r_sample[1:0]; 
+   logic at_right, at_left, at_top;      
+   logic finished;      
 
-
-
-
-   
-   //////
-   ////// Then complete the following combinational logic defining the
-   ////// next states
-   //////
-
-   ////// COMPLETE THE FOLLOW ALWAYS_COMB BLOCK
-   
    always_comb begin
-      unique case( state_R14H )
-        ( WAIT_STATE ): begin
-	   next_sample_R14S    = box_R13S[0]; 
-	   next_validSamp_R14H = validPoly_R13H;
-	   next_isQuad_R14H    = isQuad_R13H;
-	   next_state_R14H     = (validPoly_R13H) ? TEST_STATE : WAIT_STATE;
-	   next_poly_R14S      = poly_R13S;
-	   next_color_R14U     = color_R13U;
-	   next_box_R14S       = box_R13S;
-	   next_halt_RnnnnL    = ~validPoly_R13H;//1;?
-	end
-	( TEST_STATE ): begin
-	   next_sample_R14S    = (at_right_edg_R14H) ? next_up_samp_R14S : next_rt_samp_R14S;
-	   next_validSamp_R14H = ~at_end_box_R14H;//validSamp_R14H;//(~at_end_box_R14H);//if not at the end of the box sample valid
-	   next_isQuad_R14H    = isQuad_R14H;
-	   next_state_R14H     = (at_end_box_R14H) ? WAIT_STATE : TEST_STATE; 
-	   next_poly_R14S      = poly_R14S; 
-	   next_color_R14U     = color_R14U; 
-	   next_box_R14S       = box_R14S; 
-	   next_halt_RnnnnL    = (at_end_box_R14H);//0?
-	end      
-      endcase // case ( state_R14H )
-      
-   end //always_comb
+      at_right =  (sample_R14S[0] >= box_R14S[1][0]);
+      at_left =  (sample_R14S[0] <= box_R14S[0][0]);
+      at_top = (sample_R14S[1] == box_R14S[1][1]);
+      finished = at_right && at_top;
+   end
+
+   /* Wait-dependent signals */
+   /* ------------------------------------- */   
+   always_comb begin
+      unique if (!state_14[TEST] /*|| (state_14[TEST] && finished && validPoly_R13H)*/) begin
+         next_state_14[TEST]   = validPoly_R13H;
+
+         next_sample           = box_R13S[0]; 
+
+         next_validSamp_R14H   = validPoly_R13H;
+         next_isQuad_R14H      = isQuad_R13H;
+         next_poly_R14S        = poly_R13S;
+         next_color_R14U       = color_R13U;
+         next_box_R14S         = box_R13S;
+      end else begin
+         next_state_14[TEST]   = !finished; 
+
+         next_sample           = iter_sample;
+
+         next_validSamp_R14H   = !finished;
+         next_isQuad_R14H      = isQuad_R14H;
+         next_poly_R14S        = poly_R14S; 
+         next_color_R14U       = color_R14U; 
+         next_box_R14S         = box_R14S; 
+      end
+
+      next_halt_RnnnnL = !next_state_14[TEST];
+   end
+
+   /* Direction-dependent signals */
+   /* ------------------------------------- */   
+   always_comb begin
+      next_state_14[DIRECTION] = RIGHT_STATE;
+      inc[`$radix`-1:0] = (subSample_RnnnnU<<(`$radix`-3));
+      inc[`$radix`] = state_14[DIRECTION];
+
+      {up_sample[0], up_sample[1]} = {box_R14S[0][0], sample_R14S[1]+inc};
+      {r_sample[0], r_sample[1]} = {sample_R14S[0]+inc, sample_R14S[1]};
+
+      iter_sample = (at_right) ? up_sample : r_sample;
+
+      /*unique if(state_14[RIGHT]) begin
+
+      end else begin
+      end*/
+   end
+
+   /* ------------------------------------- */   
+
+   /* Hit-dependent signals */
+   /* ------------------------------------- */   
+
+   /*
+   always_comb begin
+      unique if (state_14(INSIDE)) begin
+      end else begin
+      end
+   end
+   */
+   /* ------------------------------------- */   
+
+   
+
    
    
-   //////
-   //////  RTL code for original FSM Finishes
-   //////
 
 
-   //Some Error Checking Assertions
+
+   //Error Checking Assertions
+   /* -------------------------- */
 
    //Define a Less Than Property
-   //  
    //  a should be less than b
    property rb_lt( rst, a , b , c );
       @(posedge clk) rst | ((a<=b) | !c);
    endproperty
 
    //Check that Proposed Sample is in BBox
-   assert property( rb_lt( rst, next_sample_R14S[0] , next_box_R14S[1][0] , next_validSamp_R14H ));
-   assert property( rb_lt( rst, next_sample_R14S[1] , next_box_R14S[1][1] , next_validSamp_R14H ));
-   assert property( rb_lt( rst, next_box_R14S[0][0] , next_sample_R14S[0] , next_validSamp_R14H ));
-   assert property( rb_lt( rst, next_box_R14S[0][1] , next_sample_R14S[1] , next_validSamp_R14H ));
-   //Check that Proposed Sample is in BBox
-
-   //Error Checking Assertions
+   assert property( rb_lt( rst, next_sample[0] , next_box_R14S[1][0] , next_validSamp_R14H ));
+   assert property( rb_lt( rst, next_sample[1] , next_box_R14S[1][1] , next_validSamp_R14H ));
+   assert property( rb_lt( rst, next_box_R14S[0][0] , next_sample[0] , next_validSamp_R14H ));
+   assert property( rb_lt( rst, next_box_R14S[0][1] , next_sample[1] , next_validSamp_R14H ));
+   /* -------------------------- */
 
 
 
@@ -358,33 +359,9 @@ module `mname()`
    
    //; } else { # use Modified FSM
    
-   //////
-   //////  RTL code for modified FSM Goes Here
-   //////
-   
-   ////// PLACE YOUR CODE HERE 
-   
 
-
-
-
-
-
-
-
-   
-
-
-   
-   //////
-   //////  RTL code for modified FSM Finishes
-   //////
-   
    
    //; }
 
 
 endmodule
-
-
-

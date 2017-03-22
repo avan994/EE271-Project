@@ -167,7 +167,9 @@ module `mname()`
 				      .color_R14U(color_R14U) ,	      
 				      .isQuad_R14H(isQuad_R14H),
 				      .sample_R14S(sample_R14S),
-				      .validSamp_R14H(validSamp_R14H) 
+				      .validSamp_R14H(validSamp_R14H),
+				      
+				      .hit(hit_valid_R18H)
 				      ) ;
 
    //; my $hash_jtree = generate( 'hash_jtree', "hash_jtree", 
@@ -194,7 +196,6 @@ module `mname()`
 				   .sample_R16S(sample_R16S),
 				   .validSamp_R16H(validSamp_R16H),
 				   .isQuad_R16H(isQuad_R16H)
-
 				   );
    
 
