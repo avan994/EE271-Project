@@ -169,7 +169,8 @@ module `mname()`
 				      .sample_R14S(sample_R14S),
 				      .validSamp_R14H(validSamp_R14H),
 				      
-				      .hit(hit_valid_R18H)
+				      .hit(hit_valid_R18H),
+				      .hit_line(hit_R18S[1])
 				      ) ;
 
    //; my $hash_jtree = generate( 'hash_jtree', "hash_jtree", 

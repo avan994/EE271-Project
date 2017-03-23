@@ -140,7 +140,8 @@ module `mname()`
    output logic 			validSamp_R14H,                   //Sample and Micropolygon are Valid
 
    /* Indicates whether the current sample was a hit, from sample test. */
-   input logic hit
+   input logic hit,
+   input logic signed [`$sig_fig`-1:0] hit_line
    );
    
    
@@ -211,7 +212,7 @@ module `mname()`
    enum {
       TEST = 0,
       DIRECTION = 1, 
-      SEEK = 2 
+      CHECK = 2 
    } state_index_t;
 
    /* We want the initial state to be the WAIT state, so set it 0. */
@@ -270,9 +271,11 @@ module `mname()`
    /* ------------------------------------- */   
    logic signed [`$radix`:0] inc; //increment
 
-   logic signed [`$sig_fig`-1:0] iter_sample[1:0], up_sample[1:0], other_sample[1:0]; 
+   logic signed [`$sig_fig`-1:0] iter_sample[1:0], other_sample[1:0],
+      up_sample_t[1:0], iter_sample_t[1:0];
    logic at_right, at_left, at_top, line_finished;      
-   logic finished;      
+   logic finished; 
+   logic hit_valid;
 
 
    /* Wait-dependent signals */
@@ -306,30 +309,25 @@ module `mname()`
    /* Direction-dependent signals */
    /* ------------------------------------- */   
    always_comb begin
-      at_top = (sample_R14S[1] >= box_R14S[1][1]);
-      at_right =  (sample_R14S[0] >= box_R14S[1][0]);
-      at_left =  (sample_R14S[0] <= box_R14S[0][0]);
-
-      line_finished = at_right;
-      finished = line_finished && at_top;
-
-      next_state_14[DIRECTION] = RIGHT_STATE;
       inc[`$radix`-1:0] = (subSample_RnnnnU<<(`$radix`-3));
-      inc[`$radix`] = state_14[DIRECTION];
+      inc[`$radix`]     = state_14[DIRECTION]; /* Determines sign */
 
-      {up_sample[0], up_sample[1]} = {box_R14S[0][0], sample_R14S[1]+inc[`$radix`-1:0]};
+      {up_sample_t[0], up_sample_t[1]} 
+         = {box_R14S[0][0]      , sample_R14S[1] + inc[`$radix`-1:0]};
 
-      {next_iter_sample[0], next_iter_sample[1]} = {sample_R14S[0]+inc, sample_R14S[1]};
+      {iter_sample_t[0], iter_sample_t[1]} 
+         = {sample_R14S[0] + inc, sample_R14S[1]};
 
 
+      /* When we swap */
+      next_state_14[DIRECTION] = RIGHT_STATE;
 
-      iter_sample = (line_finished) ? up_sample 
-         : (!switch) ? next_iter_sample
-         : other_sample;
+      iter_sample = (line_finished) ? up_sample_t 
+         : iter_sample_t;
 
-      next_other_sample = (!switch) ? other_sample
-         : sample_R14S;
-
+      
+      /*next_other_sample = (line_finished) ? up_sample_t
+         : other_sample;*/
    end
 
    /* ------------------------------------- */   
@@ -340,17 +338,40 @@ module `mname()`
       Stay in the CHECK state until we either finish a line, or miss. */
 
    always_comb begin
-      unique if (state_14(SEEK)) begin
-         next_state_14[SEEK] = hit;
+      at_top   =  (sample_R14S[1] >= box_R14S[1][1]);
+      at_right =  (sample_R14S[0] >= box_R14S[1][0]);
+      at_left  =  (sample_R14S[0] <= box_R14S[0][0]);
+
+      hit_valid = !(sample_R14S[0] - inc - inc - inc <= box_R14S[0][0]);
+      //(sample_R14S[1][`$sig_fig`-1:`$radix`-2] - hit_line[`$sig_fig`-1:`$radix`-2]) < inc[`$radix`:`$radix-2`]; /* Has to be on the same line */
+      line_finished = at_right || (next_state_14[CHECK] && !hit && hit_valid); 
+
+      unique if (state_14[CHECK]) begin
+         next_state_14[CHECK] = !line_finished; // ? SEEK_STATE : CHECK_STATE
       end else begin
-         next_state_14[SEEK] = !(line_finished || !hit);
+         next_state_14[CHECK] = hit; // ? CHECK_STATE : SEEK_STATE
       end
+   end
+
+   always_comb begin
+      finished = line_finished && at_top;
    end
    
    /* ------------------------------------- */   
 
    
-
+   always_ff @(posedge clk) begin
+      /*$display("%b", hit);
+      if (line_finished) begin
+         $display("\n");
+      end*/
+      if (hit_valid) begin
+         $display("1");
+      end else begin 
+         /*$display("%d", inc[`$radix`:`$radix-2`]);
+         $display("Nonmatching Diff: %d", sample_R14S[1][`$sig_fig`-1:`$radix`-2] - hit_line[`$sig_fig`-1:`$radix`-2]);*/
+      end
+   end
    
    
 
