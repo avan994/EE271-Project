@@ -127,7 +127,11 @@
 	     
 	     .hit_R18S(hit_R18S),             
 	     .color_R18U(color_R18U) ,          
-	     .hit_valid_R18H(hit_valid_R18H)  
+	     .hit_valid_R18H(hit_valid_R18H), 
+
+             .hit2_R18S(hit2_R18S),             
+	     .color2_R18U(color2_R18U) ,          
+	     .hit_valid2_R18H(hit_valid2_R18H) 
 	 );
 	 
 	//; my $bench_obj2 = generate( 'testbench', "testbench2", 
