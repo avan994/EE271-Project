@@ -114,9 +114,6 @@ module `mname()`
    
 
    /* Multi-test signals */
-   logic signed [`$sig_fig`-1:0] 	poly_R14S[`$verts`-1:0][`$axis`-1:0]; //Micropolygon to Sample Test
-   logic 				unsigned [`$sig_fig`-1:0]   color_R14U[`$colors`-1:0] ;         // Color of Poly
-   logic 				isQuad_R14H;                    //Micropygon is quad
    logic signed [`$sig_fig`-1:0] 	sample2[1:0];               //Sample Location to Be Tested
    logic 				validSamp2;                 //Sample and Micropolygon are Valid
    
@@ -208,8 +205,10 @@ module `mname()`
 				   .poly_R14S(poly_R14S),
 				   .color_R14U(color_R14U) ,	      
 				   .isQuad_R14H(isQuad_R14H),
-				   .sample_R14S(sample_R14S),
-				   .validSamp_R14H(validSamp_R14H),
+               .sample_R14S(sample_R14S),
+               .validSamp_R14H(validSamp_R14H),
+				   //.sample_R14S(sample_R14S),
+				   //.validSamp_R14H(validSamp_R14H),
 
 				   .subSample_RnnnnU(subSample_RnnnnU) ,
       
@@ -262,8 +261,8 @@ module `mname()`
 				   .poly_R14S(poly_R14S),
 				   .color_R14U(color_R14U) ,	      
 				   .isQuad_R14H(isQuad_R14H),
-				   .sample_R14S(sample2),
-				   .validSamp_R14H(validSamp2),
+           .sample_R14S(sample2),
+           .validSamp_R14H(validSamp2),
 
 				   .subSample_RnnnnU(subSample_RnnnnU) ,
       
