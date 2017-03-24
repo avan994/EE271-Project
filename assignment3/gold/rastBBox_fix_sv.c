@@ -138,7 +138,7 @@ int rastBBox_bbox_check( int   v0_x,     //uPoly
   correct = check_valid == valid ? correct : 0 ; 
   if( check_valid != valid ){
     printf( "\nerror: valid signal incorrect hw vs gold %i vs %i (valid_input=%i)\n" , check_valid , valid, valid_Poly);
-    printf("\n %i, %i, %i, %i, %i", x1, y1, x2, y2, dist_lg);
+    //printf("\n %i, %i, %i, %i, %i", x1, y1, x2, y2, dist_lg);
     // printf( "\debug: ll_x  vs gold   %d vs %d\n" , ll_x ,check_ll_x);
     // printf( "\debug: ll_y  vs gold   %d vs %d\n" , ll_y ,check_ll_y);
     // printf( "\debug: ur_x  vs gold   %d vs %d\n" , ur_x ,check_ur_x);
