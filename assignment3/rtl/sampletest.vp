@@ -96,19 +96,29 @@ module  `mname()`
     input logic signed [`$sig_fig`-1:0]  sample_R16S[1:0], // Sample Location    
     input logic 			 validSamp_R16H, // A valid sample location
     input logic 			 isQuad_R16H, //Micropolygon is quad
+    input logic signed [`$sig_fig`-1:0]  sample2_R16S[1:0], // Sample Location    
+    input logic 			 validSamp2_R16H, // A valid sample location
 
     input logic 			 clk, // Clock
     input logic 			 rst, // Reset
   
     output logic signed [`$sig_fig`-1:0] hit_R18S[`$axis`-1:0], // Hit Location
     output logic 			 unsigned [`$sig_fig`-1:0] color_R18U[`$colors`-1:0] , // Color of Poly
-    output logic 			 hit_valid_R18H                   // Is hit good
+    output logic 			 hit_valid_R18H,                   // Is hit good
+
+    output logic signed [`$sig_fig`-1:0] hit2_R18S[`$axis`-1:0], // Hit Location
+    output logic 			 hit_valid2_R18H                   // Is hit good
     );
    
    // output for retiming registers	
    logic signed [`$sig_fig`-1:0] 	 hit_R18S_retime[`$axis`-1:0];   // Hit Location
    logic 				 unsigned [`$sig_fig`-1:0]  color_R18U_retime[`$colors`-1:0];   // Color of Poly
    logic 				 hit_valid_R18H_retime;   // Is hit good
+
+   logic signed [`$sig_fig`-1:0] 	 hit2_R18S_retime[`$axis`-1:0];   // Hit Location
+   logic 				 unsigned [`$sig_fig`-1:0]  color2_R18U_retime[`$colors`-1:0];   // Color of Poly
+   logic 				 hit_valid2_R18H_retime;   // Is hit good
+
    // output for retiming registers	
    
    // Signals in Access Order  
@@ -117,12 +127,22 @@ module  `mname()`
    logic signed [2*`$shortSF`-1:0] 	 dist_lg_R16S[`$edges`-1:0]; // Result of x_1 * y_2 - x_2 * y_1
    logic 				 hit_valid_R16H ; // Output (YOUR JOB!)
    logic signed [`$sig_fig`-1:0] 	 hit_R16S[`$axis`-1:0]; // Sample position
+
+   logic signed [`$sig_fig`-1:0] 	 poly_shift2_R16S[`$verts`-1:0][1:0]; // Micropolygon after coordinate shift 
+   logic signed [`$sig_fig`-1:0] 	 edge2_R16S[`$edges`-1:0][1:0][1:0]; // Edges 
+   logic signed [2*`$shortSF`-1:0] 	 dist_lg2_R16S[`$edges`-1:0]; // Result of x_1 * y_2 - x_2 * y_1
+   logic 				 hit_valid2_R16H ; // Output (YOUR JOB!)
+   logic signed [`$sig_fig`-1:0] 	 hit2_R16S[`$axis`-1:0]; // Sample position
    // Signals in Access Order 
 
    //////// DECLARE OTHER INTERMEDIATE SIGNALS YOU NEED
    logic 				 b0 ; //Signal to determine if dist0 is to the right or left of the edge
    logic 				 b1 ; //Signal to determine if dist1 is to the right or left of the edge
    logic 				 b2 ; //Signal to determine if dist2 is to the right or left of the edge
+
+   logic 				 b02 ; //Signal to determine if dist0 is to the right or left of the edge
+   logic 				 b12 ; //Signal to determine if dist1 is to the right or left of the edge
+   logic 				 b22 ; //Signal to determine if dist2 is to the right or left of the edge
 
    //; if( $verts == 3 ) {
 
@@ -143,6 +163,7 @@ module  `mname()`
       //poly_shift_R16S[`$i`][`$j`] = 
 
       poly_shift_R16S[`$i`][`$j`] = poly_R16S[`$i`][`$j`] - sample_R16S[`$j`];
+      poly_shift2_R16S[`$i`][`$j`] = poly_R16S[`$i`][`$j`] - sample2_R16S[`$j`];
       /*poly_shift_R16S[0][1] <= poly_R16S[0][1] - sample_R16S[1];//vertex0 y
       poly_shift_R16S[0][0] <= poly_R16S[0][0] - sample_R16S[0];//vertex0 x
       poly_shift_R16S[1][1] <= poly_R16S[1][1] - sample_R16S[1];//vertex1 y
@@ -170,6 +191,10 @@ module  `mname()`
      dist_lg_R16S[0] <= poly_shift_R16S[0][0] * poly_shift_R16S[1][1] - poly_shift_R16S[1][0] * poly_shift_R16S[0][1];//edge 0-1
      dist_lg_R16S[1] <= poly_shift_R16S[1][0] * poly_shift_R16S[2][1] - poly_shift_R16S[2][0] * poly_shift_R16S[1][1];//edge 1-2
      dist_lg_R16S[2] <= poly_shift_R16S[2][0] * poly_shift_R16S[0][1] - poly_shift_R16S[0][0] * poly_shift_R16S[2][1];//edge 2-0
+     
+     dist_lg2_R16S[0] <= poly_shift2_R16S[0][0] * poly_shift2_R16S[1][1] - poly_shift2_R16S[1][0] * poly_shift2_R16S[0][1];//edge 0-1
+     dist_lg2_R16S[1] <= poly_shift2_R16S[1][0] * poly_shift2_R16S[2][1] - poly_shift2_R16S[2][0] * poly_shift2_R16S[1][1];//edge 1-2
+     dist_lg2_R16S[2] <= poly_shift2_R16S[2][0] * poly_shift2_R16S[0][1] - poly_shift2_R16S[0][0] * poly_shift2_R16S[2][1];//edge 2-0
    end   
 
    //// (4) Check distance and assign hit_valid_R16H.
@@ -180,7 +205,12 @@ module  `mname()`
      b1 = (dist_lg_R16S[1]<0);// ? 1 : 0;//check to see if point is to the right of the edge
      b2 = (dist_lg_R16S[2]<=0);// ? 1 : 0;//check to see if point is to the right of the edge
 
-     hit_valid_R16H = b0 && b1 && b2;//assign the hit valid signal to say if the sample point is inside the triangle 
+     b02 = (dist_lg2_R16S[0]<=0);// ? 1 : 0;//check to see if point is to the right of the edge
+     b12 = (dist_lg2_R16S[1]<0);// ? 1 : 0;//check to see if point is to the right of the edge
+     b22 = (dist_lg2_R16S[2]<=0);// ? 1 : 0;//check to see if point is to the right of the edge
+
+     hit_valid_R16H = b0 && b1 && b2;//assign the hit valid signal to say if the sample point is inside the triangle
+     hit_valid2_R16H = b02 && b12 && b22;//assign the hit valid signal to say if the sample point is inside the triangle 
 
    end   
 
@@ -203,6 +233,9 @@ module  `mname()`
    always_comb begin
       hit_R16S[1:0] = sample_R16S[1:0]; //Make sure you use unjittered sample
       hit_R16S[2] = poly_R16S[0][2]; // z value equals the z value of the first vertex
+
+      hit2_R16S[1:0] = sample2_R16S[1:0]; //Make sure you use unjittered sample
+      hit2_R16S[2] = poly_R16S[0][2]; // z value equals the z value of the first vertex
    end
    //; }
    //TODO: Calculate Depth by berrycentric intropolation
@@ -272,6 +305,57 @@ module  `mname()`
 				.in(hit_valid_R18H_retime) , 
 				.clk(clk) , .reset(rst), .en(1'b1),
 				.out(hit_valid_R18H));
+   
+   /* Flop R18_retime to R18 with fixed registers */ 
+
+  //for 2nd output//////////////////////////////////////////////////////////////
+  /* Flop R16 to R18_retime with retiming registers*/
+   
+   //; my $d_samp_r12 = generate( 'dff2', "d_samp_r12", 
+   //;                        BitWidth=>$sig_fig,
+   //;                        ArraySize1=>$axis,
+   //;                        PipelineDepth=>$pipe_depth-1,
+   //;                        Retime=>'YES' );
+   `$d_samp_r12->instantiate()` (
+				.in(hit2_R16S) , 
+				.clk(clk) , .reset(rst), .en(1'b1),
+				.out(hit2_R18S_retime));
+   
+   
+   //; my $d_samp_r32 = generate( 'dff', "d_samp_r32", 
+   //;                        BitWidth=>1,
+   //;                        PipelineDepth=>$pipe_depth-1,
+   //;                        Retime=>'YES' );
+   `$d_samp_r32->instantiate()` (
+				.in(hit_valid2_R16H) , 
+				.clk(clk) , .reset(rst), .en(1'b1),
+				.out(hit_valid2_R18H_retime));
+   
+   /* Flop R16 to R18_retime with retiming registers*/
+   
+   
+   /* Flop R18_retime to R18 with fixed registers */
+   
+   //; my $d_samp_f12 = generate( 'dff2', "d_samp_f12", 
+   //;                        BitWidth=>$sig_fig,
+   //;                        ArraySize1=>$axis,
+   //;                        PipelineDepth=>1,
+   //;                        Retime=>'NO' );
+   `$d_samp_f12->instantiate()` (
+				.in(hit2_R18S_retime) , 
+				.clk(clk) , .reset(rst), .en(1'b1),
+				.out(hit2_R18S));
+   
+ 
+   
+   //; my $d_samp_f32 = generate( 'dff', "d_samp_f32", 
+   //;                        BitWidth=>1,
+   //;                        PipelineDepth=>1,
+   //;                        Retime=>'NO' );
+   `$d_samp_f32->instantiate()` (
+				.in(hit_valid2_R18H_retime) , 
+				.clk(clk) , .reset(rst), .en(1'b1),
+				.out(hit_valid2_R18H));
    
    /* Flop R18_retime to R18 with fixed registers */ 
 
