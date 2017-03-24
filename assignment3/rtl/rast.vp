@@ -205,8 +205,10 @@ module `mname()`
 				   .poly_R14S(poly_R14S),
 				   .color_R14U(color_R14U) ,	      
 				   .isQuad_R14H(isQuad_R14H),
-               .sample_R14S(sample_R14S),
-               .validSamp_R14H(validSamp_R14H),
+                                   .sample_R14S(sample_R14S),
+                                   .validSamp_R14H(validSamp_R14H),
+                                   .sample2_R14S(sample2),
+                                   .validSamp2_R14H(validSamp2),
 				   //.sample_R14S(sample_R14S),
 				   //.validSamp_R14H(validSamp_R14H),
 
@@ -218,7 +220,9 @@ module `mname()`
 				   .poly_R16S(poly_R16S),
 				   .color_R16U(color_R16U),			
 				   .sample_R16S(sample_R16S),
-				   .validSamp_R16H(validSamp_R16H),
+				   .validSamp_R16H(validSamp_R16H),			
+				   .sample2_R16S(sample2_R16S),
+				   .validSamp2_R16H(validSamp2_R16H),
 				   .isQuad_R16H(isQuad_R16H)
 
 				   );
@@ -235,7 +239,9 @@ module `mname()`
 				      .poly_R16S(poly_R16S),
 				      .color_R16U(color_R16U),			
 				      .sample_R16S(sample_R16S),
-				      .validSamp_R16H(validSamp_R16H),
+				      .validSamp_R16H(validSamp_R16H),			
+				      .sample2_R16S(sample2_R16S),
+				      .validSamp2_R16H(validSamp2_R16H),
 				      .isQuad_R16H(isQuad_R16H),
       
 				      .clk(clk),
@@ -243,13 +249,15 @@ module `mname()`
       
 				      .hit_R18S( hit_R18S ),
 				      .color_R18U( color_R18U ),						 
-				      .hit_valid_R18H( hit_valid_R18H ) 
+				      .hit_valid_R18H( hit_valid_R18H ),
+                                      .hit2_R18S( hit2_R18S ),						 
+				      .hit_valid2_R18H( hit_valid2_R18H ) 
 				      );
 
    /* ----------------------- */
 
 
-
+/*
    //; my $hash_jtree2 = generate( 'hash_jtree', "hash_jtree2", 
    //;                        SigFig=>$sig_fig,
    //;                        Radix=>$radix,
@@ -275,9 +283,9 @@ module `mname()`
 				   .validSamp_R16H(validSamp2_R16H),
 				   .isQuad_R16H(isQuad2_R16H)
 
-				   );
+				   );*/
    
-
+/*
    //; my $sampletest2 = generate( 'sampletest', "sampletest2", 
    //;                        SigFig=>$sig_fig,
    //;                        Radix=>$radix,
@@ -298,7 +306,7 @@ module `mname()`
 				      .hit_R18S( hit2_R18S ),
 				      .color_R18U( color2_R18U ),						 
 				      .hit_valid_R18H( hit_valid2_R18H ) 
-				      );
+				      );*/
 
 
 
