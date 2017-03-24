@@ -117,9 +117,9 @@ module  `mname()`
    logic signed [2*`$shortSF`-1:0] 	 dist_lg_R16S[`$edges`-1:0]; // Result of x_1 * y_2 - x_2 * y_1
    logic 				 hit_valid_R16H ; // Output (YOUR JOB!)
    logic signed [`$sig_fig`-1:0] 	 hit_R16S[`$axis`-1:0]; // Sample position*/
-   logic signed [12:0] 	 poly_shift_R16S[`$verts`-1:0][1:0]; // Micropolygon after coordinate shift 
-   logic signed [12:0] 	 edge_R16S[`$edges`-1:0][1:0][1:0]; // Edges 
-   logic signed [2*13-1:0] 	 dist_lg_R16S[`$edges`-1:0]; // Result of x_1 * y_2 - x_2 * y_1
+   logic signed [16:0] 	 poly_shift_R16S[`$verts`-1:0][1:0]; // Micropolygon after coordinate shift 
+   logic signed [16:0] 	 edge_R16S[`$edges`-1:0][1:0][1:0]; // Edges 
+   logic signed [2*17-1:0] 	 dist_lg_R16S[`$edges`-1:0]; // Result of x_1 * y_2 - x_2 * y_1
    logic 				 hit_valid_R16H ; // Output (YOUR JOB!)
    logic signed [`$sig_fig`-1:0] 	 hit_R16S[`$axis`-1:0]; // Sample position
    //logic signed [11:0]  poly_R16S_short[`$verts`-1:0][`$axis`-1:0]; // Micropolygon to Iterate Over
@@ -151,7 +151,7 @@ module  `mname()`
       //Confused what to do with this line
       //poly_shift_R16S[`$i`][`$j`] = 
 
-      poly_shift_R16S[`$i`][`$j`] = poly_R16S[`$i`][`$j`][12:0] - sample_R16S[`$j`][12:0];
+      poly_shift_R16S[`$i`][`$j`] = poly_R16S[`$i`][`$j`][16:0] - sample_R16S[`$j`][16:0];
       /*poly_shift_R16S[0][1] <= poly_R16S[0][1] - sample_R16S[1];//vertex0 y
       poly_shift_R16S[0][0] <= poly_R16S[0][0] - sample_R16S[0];//vertex0 x
       poly_shift_R16S[1][1] <= poly_R16S[1][1] - sample_R16S[1];//vertex1 y
