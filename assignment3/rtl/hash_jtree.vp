@@ -86,6 +86,8 @@ module `mname()`
   input logic unsigned  [`$sig_fig`-1:0] color_R14U[`$colors`-1:0] ,         //Color of Poly
   input logic signed    [`$sig_fig`-1:0] sample_R14S[1:0],                //Sample Location to Be Tested
   input logic        	             validSamp_R14H,                  //Sample and Micropolygon are Valid
+  input logic signed    [`$sig_fig`-1:0] sample2_R14S[1:0],                //Sample Location to Be Tested
+  input logic        	             validSamp2_R14H,                  //Sample and Micropolygon are Valid
   input logic         		     isQuad_R14H,                     //Micropygon is quad
 
   //Global Signals
@@ -100,6 +102,8 @@ module `mname()`
   output logic unsigned [`$sig_fig`-1:0] color_R16U[`$colors`-1:0] ,        // Color of Poly
   output logic signed   [`$sig_fig`-1:0] sample_R16S[1:0],               // Sample Location    
   output logic                       validSamp_R16H,                 // A valid sample location
+  output logic signed   [`$sig_fig`-1:0] sample2_R16S[1:0],               // Sample Location    
+  output logic                       validSamp2_R16H,                 // A valid sample location
   output logic                       isQuad_R16H                     //Micropolygon is quad
 
  );
@@ -112,11 +116,19 @@ module `mname()`
    logic 			     validSamp_R16H_retime;                    // A valid sample location
    logic 			     isQuad_R16H_retime;   //Micropolygon is quad  
    // output for retiming registers
+
+   // output for retiming registers
+   logic signed [`$sig_fig`-1:0]     sample2_R16S_retime[1:0];   // Sample Location    
+   logic 			     validSamp2_R16H_retime;                    // A valid sample location 
+   // output for retiming registers
    
    
    logic [`$hash_out_width`-1:0] 	     hash_mask_R14H ;
    logic [`$hash_out_width`-1:0] 	     jitt_val_R14H[1:0] ;
    logic [`$sig_fig`-1:0] 		     sample_jitted_R14S[1:0] ;
+
+   logic [`$hash_out_width`-1:0] 	     jitt_val2_R14H[1:0] ;
+   logic [`$sig_fig`-1:0] 		     sample_jitted2_R14S[1:0] ;
 
    
    
@@ -176,6 +188,25 @@ module `mname()`
 	      .out_RnnH( jitt_val_R14H[1] )
 	      );
 
+  //for 2nd set of hits
+    //; my $xjit_hash2 = generate ('tree_hash', ' xjit_hash2',
+   //;                            InWidth=>$hash_in_width,
+   //;                            OutWidth=>$hash_out_width );
+   `$xjit_hash2 -> instantiate()` (
+	      .in_RnnH( { sample2_R14S[1][`$sig_fig`-1:4] , sample2_R14S[0][`$sig_fig`-1:4]}   ),
+	      .mask_RnnH( hash_mask_R14H ),
+	      .out_RnnH( jitt_val2_R14H[0] )
+	      );
+   
+   //; my $yjit_hash2 = generate ('tree_hash', ' yjit_hash2',
+   //;                            InWidth=>$hash_in_width,
+   //;                            OutWidth=>$hash_out_width );
+   `$yjit_hash2-> instantiate()` (
+	      .in_RnnH( { sample2_R14S[0][`$sig_fig`-1:4] , sample2_R14S[1][`$sig_fig`-1:4]} ),
+	      .mask_RnnH( hash_mask_R14H ),
+	      .out_RnnH( jitt_val2_R14H[1] )
+	      );
+
    //Jitter the sample coordinates
    assign sample_jitted_R14S[0] =  { sample_R14S[0][`$sig_fig`-1:0] }       
                                  | { `$sig_fig - $radix`'b0,                 //23:10 = 14 bits
@@ -187,6 +218,18 @@ module `mname()`
                                  | { `$sig_fig - $radix`'b0,                 //23:10 = 14 bits
 				     jitt_val_R14H[1][`$hash_out_width`-1:0], //7:0 = 8 bits
                                      `$radix - $hash_out_width`'b0 };     //1:0 = 2 bits  ==> 24 bits total  
+
+   //Jitter the sample coordinates
+   assign sample_jitted2_R14S[0] =  { sample2_R14S[0][`$sig_fig`-1:0] }       
+                                 | { `$sig_fig - $radix`'b0,                 //23:10 = 14 bits
+				     jitt_val2_R14H[0][`$hash_out_width`-1:0], //7:0 = 8 bits
+                                     `$radix - $hash_out_width`'b0 };     //1:0 = 2 bits  ==> 24 bits total  
+   
+   //Jitter the sample coordinates
+   assign sample_jitted2_R14S[1] =  { sample2_R14S[1][`$sig_fig`-1:0] }       
+                                 | { `$sig_fig - $radix`'b0,                 //23:10 = 14 bits
+				     jitt_val2_R14H[1][`$hash_out_width`-1:0], //7:0 = 8 bits
+                                     `$radix - $hash_out_width`'b0 };     //1:0 = 2 bits  ==> 24 bits total
 
   
 
@@ -275,7 +318,56 @@ module `mname()`
 				     .in({validSamp_R16H_retime, isQuad_R16H_retime}) , 
 				     .clk(clk) , .reset(rst), .en(1'b1),
 				     .out({validSamp_R16H, isQuad_R16H}));	
-	//Flop R16_retime to R16 with fixed registers				 
+	//Flop R16_retime to R16 with fixed registers	
+
+     //for 2nd output
+
+     
+					 
+	//; my $d_hash_r32 = generate( 'dff2', "d_hash_r32", 
+	//;                        BitWidth=>$sig_fig,
+	//;                        ArraySize1=>2,
+	//;                        PipelineDepth=>$pipe_depth-1,
+	//;                        Retime=>'YES' );
+	`$d_hash_r32->instantiate()` (
+					 .in(sample_jitted2_R14S) , 
+				     .clk(clk) , .reset(rst), .en(1'b1),
+				     .out(sample2_R16S_retime));	
+					 
+	//; my $d_hash_r42 = generate( 'dff', "d_hash_r42", 
+	//;                        BitWidth=>2,
+	//;                        PipelineDepth=>$pipe_depth-1,
+	//;                        Retime=>'YES' );
+	`$d_hash_r42->instantiate()` (
+				     .in({validSamp2_R14H, isQuad_R14H}) , 
+				     .clk(clk) , .reset(rst), .en(1'b1),
+				     .out({validSamp2_R16H_retime, isQuad2_R16H_retime}));		
+   //Flop R14 to R16_retime with retiming registers			
+
+
+	
+   
+	
+					 
+	//; my $d_hash_f32 = generate( 'dff2', "d_hash_f32", 
+	//;                        BitWidth=>$sig_fig,
+	//;                        ArraySize1=>2,
+	//;                        PipelineDepth=>1,
+	//;                        Retime=>'NO' );
+	`$d_hash_f32->instantiate()` (
+					 .in(sample2_R16S_retime) , 
+				     .clk(clk) , .reset(rst), .en(1'b1),
+				     .out(sample2_R16S));	
+					 
+	//; my $d_hash_f42 = generate( 'dff', "d_hash_f42", 
+	//;                        BitWidth=>2,
+	//;                        PipelineDepth=>1,
+	//;                        Retime=>'NO' );
+	`$d_hash_f42->instantiate()` (
+				     .in({validSamp2_R16H_retime, isQuad_R16H_retime}) , 
+				     .clk(clk) , .reset(rst), .en(1'b1),
+				     .out({validSamp2_R16H, isQuad2_R16H}));	
+	//Flop R16_retime to R16 with fixed registers			 
 	
 
    
