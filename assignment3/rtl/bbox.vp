@@ -269,10 +269,10 @@ module `mname()`
       //; for( my $k = 0; $k < 2 ; $k++ ) { 
       //;   for( my $j = 0 ; $j < 2 ; $j++ ) {
       //UR X
-      unique case(box_cases[`$k`][`$j`])
-        'b001: box_R10S[`$k`][`$j`] = poly_R10S[0][`$j`];
-        'b010: box_R10S[`$k`][`$j`] = poly_R10S[1][`$j`]; 
-        'b100: box_R10S[`$k`][`$j`] = poly_R10S[2][`$j`];
+      unique case(1'b1)
+        box_cases[`$k`][`$j`][0]: box_R10S[`$k`][`$j`] = poly_R10S[0][`$j`];
+        box_cases[`$k`][`$j`][1]: box_R10S[`$k`][`$j`] = poly_R10S[1][`$j`]; 
+        box_cases[`$k`][`$j`][2]: box_R10S[`$k`][`$j`] = poly_R10S[2][`$j`];
       endcase
       
       //;   }
@@ -343,30 +343,30 @@ module `mname()`
 
       //////// ASSIGN "out_box_R10S" and "outvalid_R10H"
       
-      out_box_R10S[`$LL`][`$X`] = (rounded_box_R10S[`$LL`][`$X`] > 0) 
+      out_box_R10S[`$LL`][`$X`] = (!rounded_box_R10S[`$LL`][`$X`][`$sig_fig`-1]) 
         ? rounded_box_R10S[`$LL`][`$X`] 
         : 0;
 
       
-      out_box_R10S[`$LL`][`$Y`] = (rounded_box_R10S[`$LL`][`$Y`] > 0) 
+      out_box_R10S[`$LL`][`$Y`] = (!rounded_box_R10S[`$LL`][`$Y`][`$sig_fig`-1]) 
         ? rounded_box_R10S[`$LL`][`$Y`] 
         : 0; 
         
       //UR X
-      out_box_R10S[`$UR`][`$X`] = (rounded_box_R10S[`$UR`][`$X`] < screen_RnnnnS[`$X`]) 
+      out_box_R10S[`$UR`][`$X`] = (rounded_box_R10S[`$UR`][`$X`][`$sig_fig`-1:`$radix`-3]  < screen_RnnnnS[`$X`][`$sig_fig`-1:`$radix`-3]) 
         ? rounded_box_R10S[`$UR`][`$X`] 
         : screen_RnnnnS[`$X`]; 
       
       //UR Y
-      out_box_R10S[`$UR`][`$Y`] = (rounded_box_R10S[`$UR`][`$Y`] < screen_RnnnnS[`$Y`]) 
+      out_box_R10S[`$UR`][`$Y`] = (rounded_box_R10S[`$UR`][`$Y`][`$sig_fig`-1:`$radix`-3]  < screen_RnnnnS[`$Y`][`$sig_fig`-1:`$radix`-3]) 
         ? rounded_box_R10S[`$UR`][`$Y`] 
         : screen_RnnnnS[`$Y`]; 
         
       outvalid_R10H = (validPoly_R10H && not_backfacing) 
         && ((rounded_box_R10S[`$LL`][`$X`] <= screen_RnnnnS[`$X`]) 
         && (rounded_box_R10S[`$LL`][`$Y`] <= screen_RnnnnS[`$Y`])) 
-        && ((rounded_box_R10S[`$UR`][`$X`] >= 0)
-        && (rounded_box_R10S[`$UR`][`$Y`] >= 0));
+        && ((!rounded_box_R10S[`$UR`][`$X`][`$sig_fig`-1])
+        && (!rounded_box_R10S[`$UR`][`$Y`][`$sig_fig`-1] ));
    end
 
    // ***************** End of Step 3 *********************
